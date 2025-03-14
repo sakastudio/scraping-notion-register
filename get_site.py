@@ -1,26 +1,20 @@
 import os
-import re
 import json
 import requests
 from bs4 import BeautifulSoup
 from markdownify import markdownify
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 
-def fetch_and_save_content(
+def fetch_and_convert_to_markdown(
         url: str,
         cookie_file_path: str = "cookies.json",
         download_folder: str = "downloaded"
 ):
     """
     指定した URL からクッキーを使用して HTML を取得し、
-    画像をローカルにダウンロードした上で HTML を Markdown に変換し、
-    「downloaded」フォルダに保存するサンプルコードです。
-
-    改善点:
-        1. 画像のファイル名が URL そのままにならないように調整
-        2. マークダウン内に 画像が ![alt](path) 形式で埋め込まれるように設定
-
+    コンテンツを Markdown に変換して保存します。
+    
     引数:
         url: データを取得するURL
         cookie_file_path: ブラウザでエクスポートした JSON 形式のクッキーファイル
@@ -53,96 +47,96 @@ def fetch_and_save_content(
     html_content = response.text
 
     # ----------------------------- #
-    # 3) HTML をパース & 画像の収集
+    # 3) HTML をパースしてメインコンテンツを抽出
     # ----------------------------- #
     soup = BeautifulSoup(html_content, "html.parser")
-    img_tags = soup.find_all("img")
-
-    # { 元の src: ローカルに保存したファイル名 } の対応表
-    local_src_map = {}
-
-    # ----------------------------- #
-    # 4) 画像のダウンロード & ファイル名調整
-    # ----------------------------- #
-    # 画像タグを順に処理してダウンロード
-    for i, img_tag in enumerate(img_tags, start=1):
-        src = img_tag.get("src")
-        if not src:
-            continue
-
-        # 画像URLを絶対URLに変換 (相対パスに対応)
-        img_url = urljoin(url, src)
-        parsed_url = urlparse(img_url)
-
-        # パスからファイル名を取得 (例: /images/pic.jpg -> pic.jpg)
-        file_name = os.path.basename(parsed_url.path)
-
-        # クエリ(?以降)やフラグメント(#以降)があれば除去
-        file_name = file_name.split('?')[0]
-        file_name = file_name.split('#')[0]
-
-        # ファイル名が空の場合は連番で命名
-        if not file_name:
-            file_name = f"image_{i}.jpg"
-
-        # OSのファイル名に使用できない文字を置換
-        file_name = re.sub(r'[\\/:*?"<>|]', '_', file_name)
-
-        # 拡張子が無ければ .jpg を付与
-        root, ext = os.path.splitext(file_name)
-        if not ext:
-            ext = ".jpg"
-            file_name = root + ext
-
-        # ダウンロード先ファイルパス
-        local_image_path = os.path.join(download_folder, file_name)
-
-        # クッキー付きセッションで画像をダウンロード
-        img_resp = session.get(img_url)
-        if img_resp.status_code == 200:
-            with open(local_image_path, "wb") as f:
-                f.write(img_resp.content)
-            local_src_map[src] = file_name
+    
+    # メインコンテンツの抽出 - 一般的なパターンを試みる
+    main_content = None
+    
+    # 一般的なコンテンツコンテナのセレクタを試す
+    potential_selectors = [
+        "article", 
+        "main", 
+        ".content", 
+        ".post-content", 
+        ".article-content",
+        ".entry-content",
+        "#content",
+        ".main-content",
+        ".post",
+        ".article"
+    ]
+    
+    for selector in potential_selectors:
+        if selector.startswith("."):
+            # クラスセレクタ
+            elements = soup.find_all(class_=selector[1:])
+        elif selector.startswith("#"):
+            # IDセレクタ
+            element = soup.find(id=selector[1:])
+            elements = [element] if element else []
         else:
-            print(f"Failed to download image: {img_url} (status code: {img_resp.status_code})")
-
+            # タグセレクタ
+            elements = soup.find_all(selector)
+        
+        if elements:
+            # 最も内容が多い要素を選択
+            elements_with_content = [(el, len(str(el))) for el in elements]
+            elements_with_content.sort(key=lambda x: x[1], reverse=True)
+            main_content = elements_with_content[0][0]
+            break
+    
+    # メインコンテンツが見つからない場合はbody全体を使用
+    if not main_content:
+        main_content = soup.body if soup.body else soup
+    
     # ----------------------------- #
-    # 5) HTML 内の画像パスをローカルパスに置換
-    #    かつ alt 属性が無い画像タグにはファイル名を付与
+    # 4) 余分な要素を削除
     # ----------------------------- #
-    for original_src, local_file_name in local_src_map.items():
-        for img_tag in soup.find_all("img", src=original_src):
-            # alt がなければファイル名を入れておく（Markdown の ![alt](src) に出る）
-            if not img_tag.get("alt"):
-                img_tag["alt"] = local_file_name
-            img_tag["src"] = local_file_name
-
-    # 置換後の HTML
-    updated_html = str(soup)
-
+    # ナビゲーション、サイドバー、フッター、広告などの不要な要素を削除
+    unwanted_elements = [
+        'nav', 'footer', '.sidebar', '.ad', '.advertisement', 
+        '.banner', '.header', '.menu', '.navigation', '.comment', 
+        '.comments', '.social', '.share', '.related'
+    ]
+    
+    for selector in unwanted_elements:
+        if selector.startswith('.'):
+            # クラスセレクタ
+            for element in main_content.find_all(class_=selector[1:]):
+                element.decompose()
+        else:
+            # タグセレクタ
+            for element in main_content.find_all(selector):
+                element.decompose()
+    
     # ----------------------------- #
-    # 6) HTML をマークダウンに変換
-    #    convert=['img'] で imgタグを ![alt](src) に変換
+    # 5) HTML をマークダウンに変換
     # ----------------------------- #
     markdown_content = markdownify(
-        updated_html,
-        heading_style="ATX",
-        convert=['img']
+        str(main_content),
+        heading_style="ATX"
     )
-
+    
+    # 連続する空行を削減
+    import re
+    markdown_content = re.sub(r'\n{3,}', '\n\n', markdown_content)
+    
     # ----------------------------- #
-    # 7) マークダウンファイルの保存
+    # 6) マークダウンファイルの保存
     # ----------------------------- #
     md_file_path = os.path.join(download_folder, "output.md")
     with open(md_file_path, "w", encoding="utf-8") as f:
         f.write(markdown_content)
-
+    
     print(f"Markdown file saved at: {md_file_path}")
-    print(f"Images saved in: {download_folder}")
+    
+    return markdown_content
 
 
 if __name__ == "__main__":
     # 使い方例
     test_url = "https://newsletter.gamediscover.co/p/steams-top-grossing-games-of-2024"
     cookie_file = "cookies.json"  # クッキーファイル（JSON形式）
-    fetch_and_save_content(test_url, cookie_file)
+    fetch_and_convert_to_markdown(test_url, cookie_file)
