@@ -10,34 +10,6 @@ NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 NOTION_DATABASE_ID = "bb656c8f12024b45afae5bb2ad03578d"
 
 
-def extract_title(content: str):
-    """マークダウンコンテンツから最初のH1をタイトルとして抽出"""
-    # # から始まるh1タグを検索
-    match = re.search(r'^# (.+)$', content, re.MULTILINE)
-    if match:
-        return match.group(1).strip()
-    
-    # h1がない場合は最初の数行から意味のある行を探す
-    lines = content.split('\n')
-    for line in lines[:10]:  # 最初の10行を対象に
-        if line and not line.startswith('#') and len(line.strip()) > 10:
-            # 40文字以上なら切り詰める
-            return line.strip()[:80] + ('...' if len(line.strip()) > 80 else '')
-    
-    # どちらも見つからない場合は日付をタイトルにする
-    return f"記事 - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-
-
-def extract_url(content: str):
-    """マークダウンコンテンツからURLを抽出する試み"""
-    # URLのパターンを検索
-    url_pattern = r'https?://[^\s)"]+'
-    match = re.search(url_pattern, content)
-    if match:
-        return match.group(0)
-    return None
-
-
 def init_notion_client():
     """Notion APIクライアントを初期化"""
     if not NOTION_TOKEN:
