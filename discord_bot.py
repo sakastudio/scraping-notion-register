@@ -50,45 +50,55 @@ async def register_url(interaction: discord.Interaction, url: str):
     except Exception as e:
         await interaction.followup.send(f"エラーが発生しました: {str(e)}")
 
+# Discord チャンネルにメッセージを送信するヘルパー関数
+def send_discord_message(channel_id, message):
+    """Discord チャンネルにメッセージを送信する"""
+    try:
+        asyncio.run_coroutine_threadsafe(
+            bot.get_channel(channel_id).send(message),
+            bot.loop
+        )
+    except Exception as e:
+        print(f"メッセージ送信中にエラーが発生: {e}")
+
+# URL登録タスクの処理関数
+def process_register_task(task):
+    """URLを取得してNotionに登録するタスク処理"""
+    channel_id = task['channel_id']
+    url = task['url']
+    
+    try:
+        # サイトのコンテンツを取得
+        content = fetch_and_convert_to_markdown(url)
+        if not content:
+            send_discord_message(channel_id, f"コンテンツの取得に失敗しました: {url}")
+            return
+        
+        # Notionテーブルに登録
+        page = register_notion_table(content, url=url)
+        
+        # 完了メッセージを送信
+        page_url = page.get("url", "不明")
+        message = f"✅ URLの登録が完了しました!\n元URL: {url}\nNotion URL: {page_url}"
+        send_discord_message(channel_id, message)
+            
+    except Exception as e:
+        error_message = f"処理中にエラーが発生しました: {str(e)}"
+        send_discord_message(channel_id, error_message)
+
 # バックグラウンド処理用のスレッド関数
 def process_task_queue():
+    """キューからタスクを取得して処理する"""
     while True:
         try:
             # キューからタスクを取得
             task = task_queue.get()
             
+            # タスクタイプに応じて適切な処理関数を呼び出す
             if task['type'] == 'register':
-                channel_id = task['channel_id']
-                url = task['url']
-                
-                try:
-                    # サイトのコンテンツを取得
-                    content = fetch_and_convert_to_markdown(url)
-                    if not content:
-                        asyncio.run_coroutine_threadsafe(
-                            bot.get_channel(channel_id).send(f"コンテンツの取得に失敗しました: {url}"),
-                            bot.loop
-                        )
-                        continue
-                    
-                    # Notionテーブルに登録
-                    page = register_notion_table(content, url=url)
-                    
-                    # 完了メッセージを送信
-                    page_url = page.get("url", "不明")
-                    message = f"✅ URLの登録が完了しました!\n元URL: {url}\nNotion URL: {page_url}"
-                    
-                    asyncio.run_coroutine_threadsafe(
-                        bot.get_channel(channel_id).send(message),
-                        bot.loop
-                    )
-                    
-                except Exception as e:
-                    error_message = f"処理中にエラーが発生しました: {str(e)}"
-                    asyncio.run_coroutine_threadsafe(
-                        bot.get_channel(channel_id).send(error_message),
-                        bot.loop
-                    )
+                process_register_task(task)
+            else:
+                print(f"不明なタスクタイプ: {task['type']}")
             
             # タスク完了をキューに通知
             task_queue.task_done()
