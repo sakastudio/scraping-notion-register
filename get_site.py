@@ -12,14 +12,14 @@ def fetch_and_convert_to_markdown(
 ):
     """
     指定した URL からクッキーを使用して HTML を取得し、
-    コンテンツを Markdown 文字列として返します。
+    サイトのタイトルとコンテンツを Markdown 文字列として返します。
     
     引数:
         url: データを取得するURL
         cookie_file_path: ブラウザでエクスポートした JSON 形式のクッキーファイル
     
     戻り値:
-        str: 変換されたマークダウンコンテンツ
+        tuple: (タイトル, 変換されたマークダウンコンテンツ)のタプル
     """
 
     # ----------------------------- #
@@ -46,9 +46,14 @@ def fetch_and_convert_to_markdown(
     html_content = response.text
 
     # ----------------------------- #
-    # 3) HTML をパースしてメインコンテンツを抽出
+    # 3) HTML をパースしてタイトルとメインコンテンツを抽出
     # ----------------------------- #
     soup = BeautifulSoup(html_content, "html.parser")
+    
+    # サイトのタイトルを取得
+    page_title = ""
+    if soup.title:
+        page_title = soup.title.string.strip()
     
     # メインコンテンツの抽出 - 一般的なパターンを試みる
     main_content = None
@@ -122,7 +127,8 @@ def fetch_and_convert_to_markdown(
     import re
     markdown_content = re.sub(r'\n{3,}', '\n\n', markdown_content)
     
-    return markdown_content
+    # タイトルとマークダウンコンテンツをタプルとして返す
+    return (page_title, markdown_content)
 
 
 if __name__ == "__main__":
@@ -130,8 +136,8 @@ if __name__ == "__main__":
     test_url = "https://newsletter.gamediscover.co/p/steams-top-grossing-games-of-2024"
     cookie_file = "cookies.json"  # クッキーファイル（JSON形式）
     
-    # マークダウンを取得
-    markdown_content = fetch_and_convert_to_markdown(test_url, cookie_file)
+    # タイトルとマークダウンを取得
+    title, markdown_content = fetch_and_convert_to_markdown(test_url, cookie_file)
     
     # 保存先フォルダの作成（存在しない場合は作成）
     download_folder = "downloaded"
@@ -142,4 +148,5 @@ if __name__ == "__main__":
     with open(md_file_path, "w", encoding="utf-8") as f:
         f.write(markdown_content)
     
+    print(f"Title: {title}")
     print(f"Markdown file saved at: {md_file_path}")

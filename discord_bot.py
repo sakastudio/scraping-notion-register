@@ -68,14 +68,14 @@ def process_register_task(task):
     url = task['url']
     
     try:
-        # サイトのコンテンツを取得
-        content = fetch_and_convert_to_markdown(url)
+        # サイトのタイトルとコンテンツを取得
+        title, content = fetch_and_convert_to_markdown(url)
         if not content:
             send_discord_message(channel_id, f"コンテンツの取得に失敗しました: {url}")
             return
         
         # Notionテーブルに登録
-        page = register_notion_table(content, url=url)
+        page = register_notion_table(content, url=url, title=title)
         
         # 完了メッセージを送信
         page_url = page.get("url", "不明")
