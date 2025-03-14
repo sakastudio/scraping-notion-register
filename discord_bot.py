@@ -9,6 +9,7 @@ from io import BytesIO
 from keep_alive import keep_alive
 from get_site import fetch_and_convert_to_markdown
 from notion_table import register_notion_table
+from title_translator import is_non_japanese_title, translate_title
 
 # 設定
 WATCH_CHANNEL_IDS = ["1350144742905876541"]
@@ -94,15 +95,27 @@ def process_register_task(task):
         # 処理状況のメッセージ
         status_msg = f"サイトのコンテンツを取得しています..."
         send_discord_message(channel_id, status_msg)
-        
         # サイトのタイトルとコンテンツを取得
         title, content = fetch_and_convert_to_markdown(url)
         if not content:
             send_discord_message(channel_id, f"❌ コンテンツの取得に失敗しました: {url}")
             return
             
+        # タイトルの翻訳（英語など日本語以外の場合）
+        original_title = title
+        translated_title = None
+        
+        if is_non_japanese_title(title):
+            status_msg = f"タイトルを翻訳しています..."
+            send_discord_message(channel_id, status_msg)
+            
+            translated_title = translate_title(title)
+            if translated_title:
+                title = f"{translated_title} (原題: {original_title})"
+                
         # 処理状況の更新
         status_msg = f"Notionテーブルに登録しています..."
+        send_discord_message(channel_id, status_msg)
         send_discord_message(channel_id, status_msg)
         
         # Notionテーブルに登録
@@ -131,7 +144,14 @@ def process_register_task(task):
             else:
                 tag_info = "タグ: 自動予測（詳細不明）"
             
-        message = f"✅ URLの登録が完了しました!\n**タイトル:** {title}\n**元URL:** {url}\n**Notion URL:** {page_url}\n**{tag_info}**"
+        # 翻訳情報を表示用に整形
+        title_info = title
+        if translated_title:  # 翻訳された場合
+            title_info = f"**タイトル:** {translated_title}\n**原題:** {original_title}"
+        else:
+            title_info = f"**タイトル:** {title}"
+        
+        message = f"✅ URLの登録が完了しました!\n{title_info}\n**元URL:** {url}\n**Notion URL:** {page_url}\n**{tag_info}**"
         send_discord_message(channel_id, message)
             
     except Exception as e:
