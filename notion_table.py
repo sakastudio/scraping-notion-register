@@ -10,7 +10,7 @@ NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 
-def extract_title(content: str):
+def extract_title(content: str, url: str):
     """マークダウンコンテンツから最初のH1をタイトルとして抽出"""
     # # から始まるh1タグを検索
     match = re.search(r'^# (.+)$', content, re.MULTILINE)
@@ -67,57 +67,25 @@ def register_notion_table(content: str, url: str = None, title: str = None):
     # タイトル抽出
     if not title:
         title = extract_title(content)
-    
-    # URL抽出
-    if not url:
-        url = extract_url(content)
-    
+
     # URLからドメイン取得（サイト名として使用）
     source = ""
     if url:
         parsed_url = urlparse(url)
         source = parsed_url.netloc
-    
+
     # Notionページのプロパティを設定
-    properties = {
-        "タイトル": {
-            "title": [
-                {
-                    "text": {
-                        "content": title
-                    }
+    properties = {"タイトル": {
+        "title": [
+            {
+                "text": {
+                    "content": title
                 }
-            ]
-        },
-        "ステータス": {
-            "select": {
-                "name": "未読"  # ステータスの初期値
             }
-        },
-        "登録日": {
-            "date": {
-                "start": datetime.now().isoformat()
-            }
-        },
-    }
-    
-    # URLがある場合は追加
-    if url:
-        properties["URL"] = {
-            "url": url
-        }
-    
-    # ソース（サイト名）がある場合は追加
-    if source:
-        properties["ソース"] = {
-            "rich_text": [
-                {
-                    "text": {
-                        "content": source
-                    }
-                }
-            ]
-        }
+        ]
+    } , "URL": {
+        "url": url
+    }}
     
     # ページ作成
     page_data = {
