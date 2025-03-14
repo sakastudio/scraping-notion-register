@@ -1,6 +1,7 @@
 import os
-import openai
-from typing import List, Dict, Any
+from typing import List
+
+from openai import OpenAI
 
 # OpenAI API設定
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -46,8 +47,8 @@ def predict_tags(content: str, title: str, available_tags: List[str], max_tags: 
         print("警告: 使用可能なタグが見つかりません。タグ予測はスキップします。")
         return []
     
-    # OpenAI APIの設定
-    openai.api_key = OPENAI_API_KEY
+    # クライアントの初期化
+    client = OpenAI(api_key=OPENAI_API_KEY)
     
     # コンテンツの最初の部分だけを使用（APIの文字数制限のため）
     trimmed_content = content[:3000] if len(content) > 3000 else content
@@ -57,7 +58,7 @@ def predict_tags(content: str, title: str, available_tags: List[str], max_tags: 
         tags_str = ", ".join(available_tags)
         
         # GPT-3.5 Turbo APIを呼び出し
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": f"あなたはコンテンツに適したタグを選択する専門家です。以下のタグリストからコンテンツに最も関連するタグを選んでください: {tags_str}"},
