@@ -1,8 +1,5 @@
 import os
-import re
-import json
-from datetime import datetime
-from urllib.parse import urlparse
+
 from notion_client import Client
 
 # Notion API設定
