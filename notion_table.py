@@ -7,10 +7,10 @@ from notion_client import Client
 
 # Notion API設定
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
+NOTION_DATABASE_ID = "bb656c8f12024b45afae5bb2ad03578d"
 
 
-def extract_title(content: str, url: str):
+def extract_title(content: str):
     """マークダウンコンテンツから最初のH1をタイトルとして抽出"""
     # # から始まるh1タグを検索
     match = re.search(r'^# (.+)$', content, re.MULTILINE)
@@ -46,7 +46,7 @@ def init_notion_client():
     return Client(auth=NOTION_TOKEN)
 
 
-def register_notion_table(content: str, url: str = None, title: str = None):
+def register_notion_table(content: str, url: str, title: str):
     """
     マークダウンコンテンツをNotionのテーブルに登録する
     
@@ -63,16 +63,6 @@ def register_notion_table(content: str, url: str = None, title: str = None):
     
     # クライアント初期化
     notion = init_notion_client()
-    
-    # タイトル抽出
-    if not title:
-        title = extract_title(content)
-
-    # URLからドメイン取得（サイト名として使用）
-    source = ""
-    if url:
-        parsed_url = urlparse(url)
-        source = parsed_url.netloc
 
     # Notionページのプロパティを設定
     properties = {"タイトル": {
@@ -86,7 +76,7 @@ def register_notion_table(content: str, url: str = None, title: str = None):
     } , "URL": {
         "url": url
     }}
-    
+
     # ページ作成
     page_data = {
         "parent": {"database_id": NOTION_DATABASE_ID},
@@ -149,11 +139,10 @@ if __name__ == "__main__":
         content = f.read()
     
     # 環境変数設定の確認
-    if not NOTION_TOKEN or not NOTION_DATABASE_ID:
+    if not NOTION_TOKEN:
         print("環境変数が設定されていません。以下の環境変数を設定してください:")
         print("NOTION_TOKEN - NotionのAPIトークン")
-        print("NOTION_DATABASE_ID - 登録先のNotionデータベースID")
     else:
         # テスト登録
         test_url = "https://newsletter.gamediscover.co/p/steams-top-grossing-games-of-2024"
-        register_notion_table(content, url=test_url)
+        register_notion_table(content, url=test_url, title="テスト記事")
