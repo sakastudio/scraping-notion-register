@@ -27,7 +27,11 @@ async def on_ready():
 
 # URLの登録コマンド
 @tree.command(name="register_url", description="指定したURLのコンテンツをNotionテーブルに登録します")
-async def register_url(interaction: discord.Interaction, url: str):
+@app_commands.describe(
+    url="登録するWebページのURL",
+    tags="カンマ区切りのタグリスト（例: ニュース,テクノロジー,AI）、指定しない場合は自動予測"
+)
+async def register_url(interaction: discord.Interaction, url: str, tags: str = None):
     await interaction.response.defer(thinking=True)
     
     try:
@@ -36,13 +40,23 @@ async def register_url(interaction: discord.Interaction, url: str):
             await interaction.followup.send("有効なURLを入力してください（http://またはhttps://で始まる形式）")
             return
         
+        # タグの処理
+        tag_list = None
+        if tags:
+            # カンマ区切りのタグをリストに変換
+            tag_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
+            tag_msg = f"指定されたタグ: {', '.join(tag_list)}"
+        else:
+            tag_msg = "タグは自動予測されます"
+        
         # 処理開始メッセージ
-        await interaction.followup.send(f"URL `{url}` の処理を開始します...")
+        await interaction.followup.send(f"URL `{url}` の処理を開始します...\n{tag_msg}")
         
         # バックグラウンド処理のためにキューに追加
         task_queue.put({
             'type': 'register',
             'url': url,
+            'tags': tag_list,
             'interaction_id': interaction.id,
             'channel_id': interaction.channel_id
         })
@@ -66,6 +80,7 @@ def process_register_task(task):
     """URLを取得してNotionに登録するタスク処理"""
     channel_id = task['channel_id']
     url = task['url']
+    tags = task.get('tags')  # タグは省略可能
     
     try:
         # サイトのタイトルとコンテンツを取得
@@ -75,11 +90,19 @@ def process_register_task(task):
             return
         
         # Notionテーブルに登録
-        page = register_notion_table(content, url=url, title=title)
+        page = register_notion_table(content, url=url, title=title, tags=tags)
         
         # 完了メッセージを送信
         page_url = page.get("url", "不明")
-        message = f"✅ URLの登録が完了しました!\n元URL: {url}\nNotion URL: {page_url}"
+        
+        # タグ情報を追加
+        if tags:
+            tag_info = f"タグ: {', '.join(tags)}"
+        else:
+            # 自動予測されたタグの情報を取得（簡易版）
+            tag_info = "タグ: 自動予測"
+            
+        message = f"✅ URLの登録が完了しました!\n元URL: {url}\nNotion URL: {page_url}\n{tag_info}"
         send_discord_message(channel_id, message)
             
     except Exception as e:

@@ -1,6 +1,9 @@
 import os
-
+from typing import List, Optional
 from notion_client import Client
+
+# タグ予測機能のインポート
+from tag_predictor import load_tags_from_file, predict_tags
 
 # Notion API設定
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
@@ -15,7 +18,7 @@ def init_notion_client():
     return Client(auth=NOTION_TOKEN)
 
 
-def register_notion_table(content: str, url: str, title: str):
+def register_notion_table(content: str, url: str, title: str, tags: Optional[List[str]] = None):
     """
     マークダウンコンテンツをNotionのテーブルに登録する
     
@@ -23,6 +26,7 @@ def register_notion_table(content: str, url: str, title: str):
         content: マークダウンコンテンツ
         url: コンテンツのURL
         title: コンテンツのタイトル
+        tags: タグのリスト（指定しない場合はコンテンツから自動予測）
     
     戻り値:
         dict: 作成されたNotionページの情報
@@ -32,9 +36,44 @@ def register_notion_table(content: str, url: str, title: str):
     
     # クライアント初期化
     notion = init_notion_client()
+    
+    # タグが指定されていない場合は自動予測
+    if tags is None:
+        # 利用可能なタグをファイルから読み込み
+        available_tags = load_tags_from_file()
+        
+        if available_tags:
+            # コンテンツからタグを予測
+            tags = predict_tags(content, title, available_tags)
+            print(f"予測されたタグ: {tags}")
+        else:
+            tags = []
+            print("タグのリストが読み込めなかったため、タグなしで登録します。")
 
     # まずページ基本情報を作成する
     try:
+        # プロパティの設定
+        properties = {
+            "タイトル": {
+                "title": [
+                    {
+                        "text": {
+                            "content": title
+                        }
+                    }
+                ]
+            },
+            "URL": {
+                "url": url
+            }
+        }
+        
+        # タグがある場合は追加
+        if tags:
+            properties["タグ"] = {
+                "multi_select": [{"name": tag} for tag in tags]
+            }
+        
         # ページプロパティのみでページを作成
         new_page = notion.pages.create(
             **{
@@ -42,20 +81,7 @@ def register_notion_table(content: str, url: str, title: str):
                     "type": "database_id",
                     "database_id": NOTION_DATABASE_ID
                 },
-                "properties": {
-                    "タイトル": {
-                        "title": [
-                            {
-                                "text": {
-                                    "content": title
-                                }
-                            }
-                        ]
-                    },
-                    "URL": {
-                        "url": url
-                    }
-                }
+                "properties": properties
             }
         )
         
@@ -163,7 +189,12 @@ if __name__ == "__main__":
     if not NOTION_TOKEN:
         print("環境変数が設定されていません。以下の環境変数を設定してください:")
         print("NOTION_TOKEN - NotionのAPIトークン")
+        print("OPENAI_API_KEY - OpenAI APIキー（タグ予測用）")
     else:
-        # テスト登録
+        # テスト登録（タグ自動予測）
         test_url = "https://newsletter.gamediscover.co/p/steams-top-grossing-games-of-2024"
         register_notion_table(content, url=test_url, title="テスト記事")
+        
+        # 手動でタグを指定する例
+        # manual_tags = ["ゲーム", "ビジネス", "Steam"]
+        # register_notion_table(content, url=test_url, title="テスト記事（手動タグ）", tags=manual_tags)
