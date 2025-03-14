@@ -77,9 +77,18 @@ def register_notion_table(content: str, url: str, title: str):
     }
     
     # マークダウンの各段落をブロックとして追加
+    # Notionの制限: リッチテキストは2000文字以下
+    MAX_TEXT_LENGTH = 2000
+    
     paragraphs = content.split('\n\n')
     for paragraph in paragraphs:
-        if paragraph.strip():
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+            
+        # 長い段落を分割（2000文字以下のチャンクに）
+        if len(paragraph) <= MAX_TEXT_LENGTH:
+            # 2000文字以内なら1つのブロックとして追加
             page_data["children"].append({
                 "object": "block",
                 "type": "paragraph",
@@ -88,12 +97,30 @@ def register_notion_table(content: str, url: str, title: str):
                         {
                             "type": "text",
                             "text": {
-                                "content": paragraph.strip()
+                                "content": paragraph
                             }
                         }
                     ]
                 }
             })
+        else:
+            # 長い段落は複数のブロックに分割
+            for i in range(0, len(paragraph), MAX_TEXT_LENGTH):
+                chunk = paragraph[i:i+MAX_TEXT_LENGTH]
+                page_data["children"].append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": chunk
+                                }
+                            }
+                        ]
+                    }
+                })
     
     # ページ作成APIを呼び出し
     try:
