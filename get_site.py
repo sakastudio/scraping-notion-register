@@ -8,20 +8,19 @@ from urllib.parse import urljoin
 
 def fetch_and_convert_to_markdown(
         url: str,
-        cookie_file_path: str = "cookies.json",
-        download_folder: str = "downloaded"
+        cookie_file_path: str = "cookies.json"
 ):
     """
     指定した URL からクッキーを使用して HTML を取得し、
-    コンテンツを Markdown に変換して保存します。
+    コンテンツを Markdown 文字列として返します。
     
     引数:
         url: データを取得するURL
         cookie_file_path: ブラウザでエクスポートした JSON 形式のクッキーファイル
-        download_folder: 保存先のフォルダ (デフォルト: "downloaded")
+    
+    戻り値:
+        str: 変換されたマークダウンコンテンツ
     """
-    # 保存先フォルダの作成（存在しない場合は作成）
-    os.makedirs(download_folder, exist_ok=True)
 
     # ----------------------------- #
     # 1) セッションの作成 & クッキー読み込み
@@ -123,15 +122,6 @@ def fetch_and_convert_to_markdown(
     import re
     markdown_content = re.sub(r'\n{3,}', '\n\n', markdown_content)
     
-    # ----------------------------- #
-    # 6) マークダウンファイルの保存
-    # ----------------------------- #
-    md_file_path = os.path.join(download_folder, "output.md")
-    with open(md_file_path, "w", encoding="utf-8") as f:
-        f.write(markdown_content)
-    
-    print(f"Markdown file saved at: {md_file_path}")
-    
     return markdown_content
 
 
@@ -139,4 +129,17 @@ if __name__ == "__main__":
     # 使い方例
     test_url = "https://newsletter.gamediscover.co/p/steams-top-grossing-games-of-2024"
     cookie_file = "cookies.json"  # クッキーファイル（JSON形式）
-    fetch_and_convert_to_markdown(test_url, cookie_file)
+    
+    # マークダウンを取得
+    markdown_content = fetch_and_convert_to_markdown(test_url, cookie_file)
+    
+    # 保存先フォルダの作成（存在しない場合は作成）
+    download_folder = "downloaded"
+    os.makedirs(download_folder, exist_ok=True)
+    
+    # ファイルに保存
+    md_file_path = os.path.join(download_folder, "output.md")
+    with open(md_file_path, "w", encoding="utf-8") as f:
+        f.write(markdown_content)
+    
+    print(f"Markdown file saved at: {md_file_path}")
