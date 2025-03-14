@@ -24,8 +24,8 @@ def register_notion_table(content: str, url: str, title: str):
     
     引数:
         content: マークダウンコンテンツ
-        url: コンテンツのURL (Noneの場合はコンテンツから抽出を試みる)
-        title: コンテンツのタイトル (Noneの場合はコンテンツから抽出)
+        url: コンテンツのURL
+        title: コンテンツのタイトル
     
     戻り値:
         dict: 作成されたNotionページの情報
@@ -36,78 +36,41 @@ def register_notion_table(content: str, url: str, title: str):
     # クライアント初期化
     notion = init_notion_client()
 
-    # Notionページのプロパティを設定
-    properties = {"タイトル": {
-        "title": [
-            {
-                "text": {
-                    "content": title
+    # まずページ基本情報を作成する
+    try:
+        # ページプロパティのみでページを作成
+        new_page = notion.pages.create(
+            **{
+                "parent": {
+                    "type": "database_id",
+                    "database_id": NOTION_DATABASE_ID
+                },
+                "properties": {
+                    "タイトル": {
+                        "title": [
+                            {
+                                "text": {
+                                    "content": title
+                                }
+                            }
+                        ]
+                    },
+                    "URL": {
+                        "url": url
+                    }
                 }
             }
-        ]
-    } , "URL": {
-        "url": url
-    }}
-
-    # ページ作成
-    page_data = {
-        "parent": {"database_id": NOTION_DATABASE_ID},
-        "properties": properties,
-        "children": [
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [
-                        {
-                            "type": "text",
-                            "text": {
-                                "content": "以下、抽出したコンテンツ："
-                            }
-                        }
-                    ]
-                }
-            },
-            {
-                "object": "block",
-                "type": "divider",
-                "divider": {}
-            },
-        ]
-    }
-    
-    # マークダウンの各段落をブロックとして追加
-    # Notionの制限: リッチテキストは2000文字以下
-    MAX_TEXT_LENGTH = 2000
-    
-    paragraphs = content.split('\n\n')
-    for paragraph in paragraphs:
-        paragraph = paragraph.strip()
-        if not paragraph:
-            continue
-            
-        # 長い段落を分割（2000文字以下のチャンクに）
-        if len(paragraph) <= MAX_TEXT_LENGTH:
-            # 2000文字以内なら1つのブロックとして追加
-            page_data["children"].append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [
-                        {
-                            "type": "text",
-                            "text": {
-                                "content": paragraph
-                            }
-                        }
-                    ]
-                }
-            })
-        else:
-            # 長い段落は複数のブロックに分割
-            for i in range(0, len(paragraph), MAX_TEXT_LENGTH):
-                chunk = paragraph[i:i+MAX_TEXT_LENGTH]
-                page_data["children"].append({
+        )
+        
+        page_id = new_page["id"]
+        print(f"Notionページを作成しました: {title}")
+        
+        # 次にコンテンツをブロックとして追加
+        # 先頭に導入文を追加
+        notion.blocks.children.append(
+            block_id=page_id,
+            children=[
+                {
                     "object": "block",
                     "type": "paragraph",
                     "paragraph": {
@@ -115,18 +78,80 @@ def register_notion_table(content: str, url: str, title: str):
                             {
                                 "type": "text",
                                 "text": {
-                                    "content": chunk
+                                    "content": "以下、抽出したコンテンツ："
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "object": "block",
+                    "type": "divider",
+                    "divider": {}
+                }
+            ]
+        )
+        
+        # マークダウンの各段落をブロックとして追加
+        # Notionの制限: リッチテキストは2000文字以下
+        MAX_TEXT_LENGTH = 2000
+        MAX_BLOCKS_PER_REQUEST = 90  # 1リクエストあたりの最大ブロック数
+        
+        # 段落を分割
+        paragraphs = content.split('\n\n')
+        blocks = []
+        
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+                
+            # 長い段落を分割（2000文字以下のチャンクに）
+            if len(paragraph) <= MAX_TEXT_LENGTH:
+                # 2000文字以内なら1つのブロックとして追加
+                blocks.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": paragraph
                                 }
                             }
                         ]
                     }
                 })
-    
-    # ページ作成APIを呼び出し
-    try:
-        response = notion.pages.create(**page_data)
-        print(f"Notionページを作成しました: {title}")
-        return response
+            else:
+                # 長い段落は複数のブロックに分割
+                for i in range(0, len(paragraph), MAX_TEXT_LENGTH):
+                    chunk = paragraph[i:i+MAX_TEXT_LENGTH]
+                    blocks.append({
+                        "object": "block",
+                        "type": "paragraph",
+                        "paragraph": {
+                            "rich_text": [
+                                {
+                                    "type": "text",
+                                    "text": {
+                                        "content": chunk
+                                    }
+                                }
+                            ]
+                        }
+                    })
+        
+        # ブロックを適切なサイズのバッチに分割して追加
+        for i in range(0, len(blocks), MAX_BLOCKS_PER_REQUEST):
+            batch = blocks[i:i+MAX_BLOCKS_PER_REQUEST]
+            notion.blocks.children.append(
+                block_id=page_id,
+                children=batch
+            )
+            print(f"ブロックバッチを追加しました: {i//MAX_BLOCKS_PER_REQUEST + 1}/{(len(blocks)-1)//MAX_BLOCKS_PER_REQUEST + 1}")
+        
+        return new_page
     except Exception as e:
         print(f"Notionページの作成に失敗しました: {e}")
         raise
