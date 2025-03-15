@@ -12,7 +12,7 @@ from notion_table import register_notion_table
 from title_translator import is_non_japanese_title, translate_title
 
 # 設定
-WATCH_CHANNEL_IDS = ["1350334310452039680"]
+WATCH_CHANNEL_IDS = ["1350144742905876541"]
 
 # URLの正規表現パターン
 URL_PATTERN = r'https?://[^\s)"]+'
@@ -45,11 +45,7 @@ async def on_message(message):
     # 自分自身のメッセージは無視
     if message.author == bot.user:
         return
-    
-    # ボットからのメッセージは無視（人間からの投稿のみを処理）
-    if message.author.bot:
-        return
-        
+
     # 指定されたチャンネル以外のメッセージは無視
     if not WATCH_CHANNEL_IDS or str(message.channel.id) not in WATCH_CHANNEL_IDS:
         return
@@ -119,7 +115,6 @@ def process_register_task(task):
                 
         # 処理状況の更新
         status_msg = f"Notionテーブルに登録しています..."
-        send_discord_message(channel_id, status_msg)
         send_discord_message(channel_id, status_msg)
         
         # Notionテーブルに登録
