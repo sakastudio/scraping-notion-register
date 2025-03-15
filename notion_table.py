@@ -117,7 +117,7 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
         
         # マークダウンの各段落をブロックとして追加
         # Notionの制限: リッチテキストは2000文字以下
-        MAX_TEXT_LENGTH = 2000
+        MAX_TEXT_LENGTH = 1990
         MAX_BLOCKS_PER_REQUEST = 90  # 1リクエストあたりの最大ブロック数
         
         # 段落を分割
