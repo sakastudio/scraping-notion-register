@@ -45,6 +45,10 @@ async def on_message(message):
     # 自分自身のメッセージは無視
     if message.author == bot.user:
         return
+    
+    # ボットからのメッセージは無視（人間からの投稿のみを処理）
+    if message.author.bot:
+        return
         
     # 指定されたチャンネル以外のメッセージは無視
     if not WATCH_CHANNEL_IDS or str(message.channel.id) not in WATCH_CHANNEL_IDS:
