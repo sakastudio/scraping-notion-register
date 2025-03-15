@@ -1,166 +1,176 @@
-#### Share this post
+I see this a lot. I have worked on games like this:
 
-[![](https://substackcdn.com/image/fetch/w_520,h_272,c_fill,f_auto,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe09e19b1-70dc-4d37-8c69-0521c947b595_1920x1080.png)
+A well-crafted game releases that have sales that are ok, but not great. And these games did everything right! They followed the basic marketing meta of entering into festivals, sending their demo to content creators, creating a tiktok account, just to name a few. They released with a decent number of wishlists (10,000 or maybe even 30,000). They got into popular upcoming (maybe even New & Trending). The game has no major bugs, and the game is made by an experienced team, not some first-time, hobbyist project. But within the first month of launch the game stalls out at 150ish reviews. The reviews are “very positive” (average user review score is 88%-95% positive).
 
-![The GameDiscoverCo newsletter](https://substackcdn.com/image/fetch/w_36,h_36,c_fill,f_auto,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc4ecd3b8-0264-4896-8b6e-4cfeffc01276_840x840.png)
+At this point the developers throw their hands up and say “WHAT DO YOU WANT STEAM?!? I have very positive reviews but no sales? No major bugs! WHY WON’T YOU SHOW MY GAME!?!”
 
-The GameDiscoverCo newsletter
+“If only Steam would show my game more, I would be able to sell more copies!”
 
-Steam's top-grossing games of 2024 revealed, analyzed](https://substack.com/home/post/p-153667998?utm_campaign=post&utm_medium=web)
+In this blog post I am going to explain what I think is going on.
 
-Copy linkFacebookEmailNotesMore
+## Excitement is the unmeasurable factor
 
-# Steam's top-grossing games of 2024 revealed, analyzed
+There are so many games released every day that players can be picky. There are hundreds of “good” games out there and players have huge backlogs of unplayed games. They can be picky.
 
-### Also: lots of news, a special announcement & a new hire.
+In fact, players are picky.
 
-[Simon Carless](https://substack.com/@simoncarless)
+Steam fans can play the most exciting games that are in their favorite genre and never run out of content.
 
-Jan 03, 2025
+I am more and more convinced that the Steam algorithm is built around elevating games that have that certain “magic” that have some *“je ne sais quoi”* that  makes people buy it right away, start playing it, sharing it with their friends, posting about it on social media, and recommending it to their favorite content creator (and that creator playing it over and over again).
 
-∙ Paid
+There are “good” games and then there are EXCITING games that make people buy them right away.
 
-15
+There is nothing wrong with just “good” games. A good game has no real flaws. But a “good” game doesn’t stop people in their tracks and demand that they play it.
 
-* #### Share this post with a friend
+Ultimately these games with 150ish “very positive” reviews  stalled because they were “good.” They were “fine.”
 
-  Since you liked this post, why not share it to help spread the word?
+[Wanderbots touched on this phenomenon with his blog post called “Escaping Coverage Limbo](https://www.wanderbots.com/blog/escaping-game-coverage-limbo). In short, he explains that when someone sends their game to him for coverage, he never gives definitive “no I won’t cover your game” because it isn’t that he hates your game, it is just that other games are more exciting and more relevant to him, and they jump the queue to get covered before yours.
 
-  Share
+Similar to review scores, streamers don’t play your game not because it is bad, but it just isn’t AMAZING!
 
-#### Share this post
+## The missing metric
 
-[![](https://substackcdn.com/image/fetch/w_520,h_272,c_fill,f_auto,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe09e19b1-70dc-4d37-8c69-0521c947b595_1920x1080.png)
+When developers look at their review scores and see “95% positive” reviews they don’t see the secret metric which is “how many players just looked at the game and passed.”
 
-![The GameDiscoverCo newsletter](https://substackcdn.com/image/fetch/w_36,h_36,c_fill,f_auto,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc4ecd3b8-0264-4896-8b6e-4cfeffc01276_840x840.png)
+Those players thought “eh, looks fine, maybe later.”
 
-The GameDiscoverCo newsletter
+The number of positive reviews don’t capture EXCITEMENT. If someone isn’t excited about your game, they don’t buy it. They don’t play it. They don’t leave a review.
 
-Steam's top-grossing games of 2024 revealed, analyzed](https://substack.com/home/post/p-153667998?utm_campaign=post&utm_medium=web)
+## Opportunity cost
 
-Copy linkFacebookEmailNotesMore
+This is where the frustration comes in. Developers look at their 95% positive review scores and curse in the general direction of Steam yelling “WHY WON’T YOU SHOW MY GAME MORE! 95% of people like it!”
 
-1
+That is not how it works though.
 
-[Share](javascript:void(0))
+95% positive does not mean that 95% of all people like the game. It just means 95% of the people who were excited enough to buy it, recommended the game.
 
-*[The [GameDiscoverCo game discovery newsletter](http://newsletter.gamediscover.co/) is written by ‘how people find your game’ expert & company founder Simon Carless, and is a regular look at how people discover and buy video games in the 2020s.]*
+The key number Valve uses to determine what games to promote is not review positivity, or “visits”, it only cares about dollars earned.
 
-We’re back, folks, and it’s 2025, the year that [the movie Pacific Rim](https://en.wikipedia.org/wiki/Pacific_Rim_(film)) is set in. So, our 2025 industry prediction is that *“world leaders decide to cease funding for the Jaeger program”* due to [Kaiju attacks](https://www.youtube.com/watch?v=bGbU_20InKM). (Wait, weren’t we meant to say something about Switch 2 here?) Anyhow, we have an action-packed newsletter for you, so let’s hit it…
+Steam knows exactly how much money your game earns when they show it. And you are compared to all other games on the platform.
 
-## Reveal: GameDiscoverCo x 50 clients, new biz star
+Let me get specific.
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1352072a-d98b-4e48-8d32-72085bad37bd_800x445.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1352072a-d98b-4e48-8d32-72085bad37bd_800x445.jpeg)
+This is the Special Offers widget and is one of the ways that Valve promotes a game that it believes in. [(For more info on how to get a Daily Deal or other Special Offer, read this blog post)](https://howtomarketagame.com/2024/04/29/how-to-get-special-daily-deal-featuring-on-the-steam-front-page/)
 
-Most of you know GameDiscoverCo from this very newsletter. But we’ve been quietly fleshing out our GDCo Pro back-end - a massively enhanced set of Steam *‘deep dive’* and console data compared to our inexpensive [GDCo Plus](http://newsletter.gamediscover.co/subscribe) offering - for >a year now.
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-13-1024x468.png)
 
-So we’re delighted to announce the following:
+This widget can only promote 19 games per day.
 
-* **We’ve hit a milestone - 50 game companies licensing our** ***‘full’*** **Pro data:** they span everyone from the biggest VCs, through the coolest indie publishers, and many signature firms you might have heard of. (We were stealthy about that, huh?)
-* **If you didn’t yet, we’ve got someone you can talk to:** we’re delighted to announce that [Matt Styles](https://www.linkedin.com/in/matthewstyles/) - former head of game events at ReedPop (PAX, EGX) and co-creator of the much loved [WASD UK indie event](https://www.instagram.com/wasdlive/) - is **joining GDCo as our head of biz dev** to help us improve & expand this product & *‘take things to the next level’.*
+If you just have a “good” game, and Steam puts you in this widget you could probably earn a decent amount of money. I have seen a lot of just “good” games earn $10,000 for a “Daily Deal” aka “Today’s deal!”
 
-Matt’s a true friend to the game biz, and will be at GDC (San Francisco), Reboot Develop (Dubrovnik), Develop (Brighton) & Gamescom (Cologne) in 2025 if you’d like to [chat to him](mailto:mattstyles@gamediscover.co) in-person. And he’s [available on email](mailto:mattstyles@gamediscover.co) and for video demos pretty much any time.
+But there are lots of other games that if Valve put them in that widget, they will earn $20,000.
 
-We’re excited to be spreading the word on GDCo’s Pro Steam ‘deep dive’ and full console data - because it’s a) a great *‘we track everything’* alt to the *‘800 pound gorillas’* of the space, and b) it’s way more fully featured than other *‘ground-up’* solutions. (And it all comes with full access to the paid newsletter & Discord, of course!) Onward…
+So YES, your game has 95% positive reviews. And yes there would be some people who would be excited and like your game. And yes if your game is shown in the Special Offers section you will earn a lot of money. But, in the eyes of the Valve algorithms, your game is taking up a slot of a game that could earn even more money, and could make even more people happy.
 
-## Game discovery news: oh 2024, where did you go?
+[This is “Opportunity Cost” aka the potential benefits a business misses out on when choosing one alternative over another.](https://www.investopedia.com/terms/o/opportunitycost.asp)
 
-Before we get onto the main feature, we have a great deal of news to catch up on since our last newsletter in mid-December. So let’s disgorge a chunk of it now:
+Opportunity Cost is the reason many “good” games stall out at 150 reviews that are “very positive.”
 
-* Lots of end-of-year round-ups hit: we really dug [SkillUp’s rewind of 2024](https://youtu.be/KQYFjRZfUfE) *(above)*, [Adam Millard’s](https://www.youtube.com/watch?v=9Rsdhb0wdPc) *[‘games you should have played in 2024’](https://www.youtube.com/watch?v=9Rsdhb0wdPc)* [video](https://www.youtube.com/watch?v=9Rsdhb0wdPc), and PC Gamer on why *“[PC gaming [in 2024] is still extremely weird](https://www.pcgamer.com/games/if-2024-proves-anything-its-that-mainstream-success-hasnt-made-pc-gaming-any-less-weird-and-thank-god-for-that/)”* - in a good way - as well as The Verge on [why gameplay diversity ruled last year](https://www.theverge.com/24325371/2024s-best-games-classic-genres-astro-bot-balatro-metaphor). (And, uhh, [Todd & Aaron](https://www.youtube.com/watch?v=DUhbQmfEvBo)’s erudition.)
-* Those Switch 2 leaks keep piling up: before the holidays, more reports that Nintendo’s Switch successor [will have magnetic controllers with drift-resistant sticks](https://www.theverge.com/2024/12/18/24324483/nintendo-switch-2-leak-reddit-next-handheld), and possibly extra power when docked; images of the Switch 2’s motherboard [also seem to have surfaced](https://www.nintendolife.com/news/2025/01/rumour-supposed-images-of-the-switch-2-motherboard-appear-online). (But mainly: it’s a souped-up Switch!)
-* Dungeon Investing’s analysis of Square Enix ends [with an interesting quote](https://www.dungeoninvesting.com/p/square-enix-strategy-allocation-valuation): *“In this market, 2 types of companies can go well. Hyper cost-conscious (PlayWay, Falcom), or really focused companies with not many releases. The era of flooding the market with AA games has passed.”* (He thinks SQEX is now *“focusing & avoiding cannibalization.”*)
-* We’ll look at unreleased Steam *‘trending games’* again on Monday, but [the holiday edition](https://www.linkedin.com/posts/simoncarless_as-we-end-out-the-year-heres-gamediscovercos-activity-7277336868931690497-ZRIf/) saw a surprise announce & pre-order from [Space Engineers 2](https://store.steampowered.com/app/1133870/Space_Engineers_2/) (#1) leading the charts, closely followed by [Elden Ring Nightreign](https://store.steampowered.com/app/2622380/ELDEN_RING_NIGHTREIGN/) (#2), the PC version of [Final Fantasy VII Rebirth](https://store.steampowered.com/app/2909400/FINAL_FANTASY_VII_REBIRTH/) (#3), and the still-trending, Terraria-adjacent [Kyora](https://store.steampowered.com/app/3337850/KYORA/) (#4).
-* Fascinating to see the New York Times’ mainstream piece on [how graphics aren’t the key trend driving video game sales](https://www.nytimes.com/2024/12/26/arts/video-games-graphics-budgets.html?unlocked_article_code=1.k04.jf1M.QtvXeKDou_Ef&smid=url-share), as it notes: *“Optimizing cinematic games for a narrow group of consumers who have spent hundreds of dollars on a console or computer may no longer make financial sense.”* (And ties in to industry woes.)
-* Talking of *‘extra horsepower’,* [PlayStation 5 Pro](https://www.playstation.com/en-us/ps5/ps5-pro/) got the *‘explainer’* it probably should’ve at announce, with lead architect Mark Cerny doing [an in-depth ‘technical seminar’](https://www.youtube.com/watch?v=lXMwXJsMfIQ) and [talking to Digital Foundry](https://www.eurogamer.net/digitalfoundry-2024-sony-ps5-pro-tech-interview-with-mark-cerny-and-mike-fitzgerald). (The tech is cutting-edge and incredibly impressive - but will most devs unlock its potential? We hope so!)
-* The player-voted [winners of The Steam Awards](https://store.steampowered.com/steamawards/2024)? Black Myth: Wukong made up for its [possible over-reaction to not winning The Game Awards](https://www.polygon.com/awards/497206/black-myth-wukong-goty-loss) by grabbing Game Of The Year. Elsewhere, Labor Of Love went to Elden Ring + DLC, Better With Friends to Helldivers 2, and [Liar’s Bar](https://store.steampowered.com/app/3097560/Liars_Bar/) got Innovative Gameplay.
-* Circana’s Nov. 2024 U.S. hardware and select software results [dropped when we were out for break](https://www.linkedin.com/posts/matpiscatella_two-huge-video-game-sales-milestones-were-activity-7275150386343170048-MJLK/), and Call Of Duty 6 did very well (duh!), already becoming the #2-seller for the year. Also: PS5 $ sales were up 15% YoY, aided by PS5 Pro, and *“Nintendo Switch surpassed PlayStation 2 in US lifetime hardware unit sales.”*
-* Looking at [GDCo’s Switch eShop charts](https://plus.gamediscover.co/switch-top-downloads) (*$, recent, paid third-party, U.S. by download #*), [Just Dance 2025](https://www.nintendo.com/us/store/products/just-dance-2025-edition-switch/)’s 60% discount charted it in the overall Top 30, [MySims Cozy Bundle](https://www.nintendo.com/us/store/products/mysims-cozy-bundle-switch/) continues to perform at #40, while the older [Sonic X Shadow Generations Deluxe](https://www.nintendo.com/us/store/products/sonic-x-shadow-generations-digital-deluxe-upgrade-70070000022584-switch/) rides Sonic movie mania to #90. (It’s a bit slow for brand new releases, tho.)
-* Here’s [an interesting stat on Sony’s PS Portal](https://www.threads.net/@stephentotilo/post/DEGBa_ayX19?xmt=AQGzbrB1UWM1CvRZrhU3RPMY7Po35viTMcNfPhrMwAItq6U) *[‘WiFi x PS5 handheld’](https://www.threads.net/@stephentotilo/post/DEGBa_ayX19?xmt=AQGzbrB1UWM1CvRZrhU3RPMY7Po35viTMcNfPhrMwAItq6U)*, per a [Game File interview](https://www.gamefile.news/p/playstation-portal-peak-time-interview-ps5): *“PS Portal usage peaks at 9pm [and] PS5 usage peaks at 8pm… Sony thinks that may mean [Portal](https://www.playstation.com/en-us/accessories/playstation-portal-remote-player/) users relinquish their TVs to family by 9pm, then keep playing via their Portal.”*
-* As for [2024’s Twitch year in review,](https://blog.streamelements.com/state-of-the-stream-twitch-2024-year-in-review-ef4d739e9be9) via StreamElements and Rainmaker.gg, there were 18.9 billion hours watched in 2024, vs. 18.5b in 2023. Twitch’s top 10 most-streamed games have *“remained almost unchanged for 5 years”* - headed in 2024 by GTA, LoL, Valorant, Counter-Strike, Fortnite, DOTA 2 and Minecraft.
-* You know [those Steam take-overs](https://steamdb.info/sales/takeovers/), when Valve decides your game deserves a giant editorial header on the Steam front page? According to GDCo’s Alejandro, there were 115 homepage takeovers in 2024 - all [viewable via SteamDB here](https://steamdb.info/sales/takeovers/) - compared to 94 in 2023, 92 in 2022, and 91 in 2021. The more you know…
-* Microlinks: PlayStation Plus’ [three Essential games for Jan. 2025](https://blog.playstation.com/2025/01/01/playstation-plus-monthly-games-for-jan-2025-suicide-squad-kill-the-justice-league-need-for-speed-hot-pursuit-remastered-the-stanley-parable-ultra-deluxe/) are Suicide Squad, Need for Speed Hot Pursuit & The Stanley Parable; over its entire (very long!) history, Second Life [has paid out $1.1 billion to creators](https://venturebeat.com/games/linden-lab-has-spent-1-3b-building-second-life-and-paid-1-1b-to-creators/); Meta Quest [had a bad OS update over the holidays](https://www.roadtovr.com/meta-free-quest-3s-replacement-bricked/) which bricked some (not often-updated) devices.
+It is good, but there are games that perform even better under similar conditions so Valve emphasizes those games instead of yours.
 
-## Steam's top $ games of 2024 revealed, analyzed..
+## Signs of lack of excitement.
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb9094b28-a2e2-41f5-9840-8454c79aa8c6_800x456.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb9094b28-a2e2-41f5-9840-8454c79aa8c6_800x456.jpeg)
+Developers love to complain about Steam reviewers being idiots (especially when they see reviews that are like “100 hours on record” review: “not enough content”). But overall, I think Steam reviewers are very good and really perceptive about the weaknesses of a game.
 
-We looked at [the top-grossing new PC games of 2024](https://newsletter.gamediscover.co/p/revealed-the-top-new-pc-and-console) just before the holidays. But since then, Valve put up [their](https://store.steampowered.com/sale/bestof2024) *[‘Best of 2024’](https://store.steampowered.com/sale/bestof2024)* [sale page](https://store.steampowered.com/sale/bestof2024) *(above)*, which very handily groups Steam’s top games of 2024 by gross revenue into tiers, regardless of age. So let’s look at multi-year trends, age of hits, and what those tiers might be, $-wise…
+For games that “stall out” at 150 reviews that are 95% positive, I usually see “faint praise” and they usually fall into these categories.
 
-Firstly, we’ve taken the overall top-grossing games in the Platinum, Gold and Silver charts, **[created a ‘chart trending’ document](https://docs.google.com/spreadsheets/d/1JuwMhIgsF6PfQ2klL-X1dwFjGVzzL0h4Drp_2fhw5FA/)** *(Google Drive doc)*, and mapped them to the year that they were first available on Steam:
+Note: All of the reviews I show here are from real games that achieved review ratings in the 80-98% positive range, but are from games that are stuck in that 150-ish review range.
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe09e19b1-70dc-4d37-8c69-0521c947b595_1920x1080.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe09e19b1-70dc-4d37-8c69-0521c947b595_1920x1080.png)
+### Reason #1: Good but not exciting
 
-Some brief notes on these interesting trends:
+Here are a couple examples:
 
-* **19 games out of the ~50 top-grossers came out in 2024**: that’s actually slightly up on the 17 games released that year [in our ‘end of 2023’ analysis](https://newsletter.gamediscover.co/p/which-steam-games-won-revenue-again). So **about 35% of the ‘revenue hits’ are new,** in recent years.
-* **The rest of the top-grossing games go back a decade-plus:** 16 of the remaining games came out in the 2020s, and the other 15 in the 2010s. Here’s the full rundown: *“2023 - 5; 2022 - 4; 2021 - 3; 2020 - 4; 2019 - 3; 2018 - 1; 2017 - 1; 2016 - 2; 2015 - 2; 2014 - 2; 2013 - 3; 2012 - 1.”*
-* **Most ‘new’ games will fade down - or off - the charts in 2025:** specifically, only 5 of the 17 ‘hits’ in 2023 stayed higher up the chart in 2024 - one at Platinum (Baldur’s Gate 3), one at Gold (EA Sports FC 24), and three at Silver (Call Of Duty: Modern Warfare III, Hogwarts Legacy, and Lethal Company.)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-14.png)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-15.png)
 
-Given the make-up of these *‘made it from 2023 to 2024’* titles - two yearly franchise updates, with most other games on the fade-out - this **clearly shows the lack of evergreen GaaS titles being created in recent years**. (Not news, but good to see facts.)
+### Reason #2: Not enough content or lack of depth
 
-Finally, let’s have a look at multi-year trending - back to 2021 here, but **[the full document](https://docs.google.com/spreadsheets/d/1JuwMhIgsF6PfQ2klL-X1dwFjGVzzL0h4Drp_2fhw5FA/)** has data back to 2019 - of Steam top-grossing tiers. Let’s start with Platinum, listed alphabetically, since the order is randomized by Steam:
+Steam players love DEEEEP, LOOOONG games ([even though many devs erroneously assume they want short games that respect their time](https://howtomarketagame.com/2023/05/30/respect-players-time-by-making-longer-games/)).
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc44aa89c-0f95-4fe7-86cf-f8349ab374df_1000x313.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc44aa89c-0f95-4fe7-86cf-f8349ab374df_1000x313.jpeg)
+Often reviewers will use the phrase “great first version, will check back for more content”
 
-There’s a clear bifurcation here of **the brand-new, premium-first hits** (Black Myth, Palworld, Space Marine 2) **alongside the evergreen GaaS titles** (DOTA 2, Counter-Strike 2, Apex Legends, PUBG.) Also interesting to see Elden Ring going back up to Platinum in 2024 thanks to [its Shadow Of The Erdtree DLC](https://store.steampowered.com/app/2778580/ELDEN_RING_Shadow_of_the_Erdtree/). Next up, Gold:
+Or
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc5058eed-9bbc-474a-845b-2dddb95577fd_1000x310.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc5058eed-9bbc-474a-845b-2dddb95577fd_1000x310.jpeg)
+“It lacks depth”
 
-Lots of obvious games in here - for example Cyberpunk, two EA Sports FC games, and some **oldies but goodies like War Thunder and Warframe** - which **keep on monetizing efficiently, a decade plus later**…
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-16.png)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-18.png)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-27.png)
 
-There’s also a few semi-surprises - Naraka: Bladepoint still performing well in Asia (it has 50% China and only 7% U.S. players.) And we’ll see if *‘now’* GaaS hits The First Descendant and Throne and Liberty can hang on in 2025. (Maybe they can!)
+### Reason #3: Slight jank
 
-Finally, let’s see the Silver tier games - though again, [the full doc](https://docs.google.com/spreadsheets/d/1JuwMhIgsF6PfQ2klL-X1dwFjGVzzL0h4Drp_2fhw5FA/) has the 50 Bronze games too if you want to check those:
+When I released my first games I underestimated how perfect a game must feel. I didn’t realize how much polish games require. I ignored edge cases that I should have smoothed out. Even simple games must feel perfect to the end player.
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F00b5e643-7bb3-4989-adbd-54c2e0bb01a7_1000x640.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F00b5e643-7bb3-4989-adbd-54c2e0bb01a7_1000x640.jpeg)
+In today’s market, just a bit of jank can sink a game. This is also genre dependent too. Part of the reason platformers and souls-likes are so risky to make is that there are so many of them that they must be absolutely flawless in execution or fans will pick them apart. Other genres such as horror are allowed a BIT more janky (but not much more).
 
-A few highlights here? **Fallout 76 making it up to Silver tier** for the first time in recent memory, **aided by the hit Fallout TV show**. And [Forza Horizon 4’s delisting in December](https://forza.net/news/forza-horizon-4-delisting) meant it made the charts too, as people grabbed it before it disappeared…
+Relevant reviews. Look at how these reviews list a bunch of seemingly minor issues, but when they are added together, it seems like this game is a bit janky.
 
-It’s also notable to see a **couple of evergreens like Grand Theft Auto V and Rainbow Six Siege flagging a tiny bit**. (Although, since this is a tier-based system, it’s also possible they got similar revenue to last year, but other games did better.)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-19.png)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-20.png)
 
-Talking of tiers, we do have some estimates of gross 2024 Steam revenue for these tiers, based on GDCo data: we think **2024’s Bronze tier is $10-$30m revenue, Silver is $30-$60m, Gold is $60-$100m, and Platinum is over $100m**. (In some cases, a long way over, since a handful of the top titles made hundreds of millions!)
+### Reason #4: Game genre mismatch
 
-## Bonus: most-played Steam Deck games in 2024?
+Sometimes screenshots and trailers make people assume a game is in one genre, but once they play the game, they realize that the [game was missing key genre anchors](https://howtomarketagame.com/2019/12/23/know-your-games-anchor) and doesn’t match their taste preferences. Essentially “The game is fine, just not my cup of tea”
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F95f50ae0-8e47-4d7c-8baf-d73fb4157479_1920x1080.png)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F95f50ae0-8e47-4d7c-8baf-d73fb4157479_1920x1080.png)
+Here are some example reviews:
 
-The sharp-eyed among you may have noticed that ‘Most-played Steam Deck games’ is [also a category in Valve’s ‘Best Of 2024’ page](https://store.steampowered.com/sale/bestof2024?tab=6), as it has been since 2022. So we decided to do a quick breakdown of that, too! (It’s the second tab of [the document](https://docs.google.com/spreadsheets/d/1JuwMhIgsF6PfQ2klL-X1dwFjGVzzL0h4Drp_2fhw5FA/).)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-21.png)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-22.png)
 
-Above are Platinum, Gold and Silver tiers, by original release year. There’s a lot of overlap with top-grossing releases, of course, with **new debuts like Palworld and slightly older releases like Baldur’s Gate 3 and Cyberpunk all making Platinum**.
+### Reason #5: Oversaturated genres with high quality games
 
-There’s also a set of **lower cost, particularly handheld-friendly games** - such as **Balatro, Dave The Diver, and Vampire Survivors,** which seem to **permanently hang near the top of the charts**.
+In this category the game is fine, but it is being compared to the biggest games in the genre.
 
-So finally, look, here’s 2022 to 2024 in most-played Steam Deck charts, Platinum and Gold tiers only:
+These reviews typically popup up in genres with a clear market leader or one that is VERY VERY high quality.
 
-[![](https://substackcdn.com/image/fetch/w_1456,c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F41d5b25f-fbbe-40f2-a77c-56a8ca7f600a_1000x661.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F41d5b25f-fbbe-40f2-a77c-56a8ca7f600a_1000x661.jpeg)
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-23.png)
 
-That’s pretty interesting data, especially with games like **Slay The Spire, The Binding Of Isaac: Rebirth and Skyrim surging back into Gold tier in 2024**, after being Silver in 2023. (They’re true evergreens!)
+Look at this final review, it is literally describing opportunity cost. There are other games that are better than this one so by playing this game you are missing out on others.
 
-And that’s all we have for this week. Welcome back, and we’ll be back to our regular Tuesday and Friday GDCo newsletter schedule, starting next week. Toodles…
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-24.png)
 
-*[We’re [GameDiscoverCo](http://www.gamediscover.co/), an agency based around one simple issue: how do players find, buy and enjoy your PC/console game? Reminder to paid subs: you also get access to [our basic Plus data back-end](http://plus.gamediscover.co/) and [our Plus member Discord](https://discord.gg/zvP7My2Q3e) as part of your subscription - feel free to use ‘em!]*
+## Word of mouth
 
-15
+One of the big reasons “good but not great” games don’t sell well is that they miss out on word of mouth. In all my market research I found that a lot of people buy games after they are recommended by their friends.
 
-* #### Share this post with a friend
+Word of mouth operates outside of the Steam platform. It occurs in Discord DMs, text messages, and in-person conversations in the break room at work. There is no metric in the Steamworks backend that can show “word of mouth.” It is super important, we just can’t measure it.
 
-  Since you liked this post, why not share it to help spread the word?
+This is why I call it “magic” when a game sells well. It is because un-measurable activity is occurring outside of Steam that is driving people to buy your game.
 
-  Share
+[I found this meme posted on r/steam a while ago and it confirms exactly what I have found:](https://www.reddit.com/r/Steam/comments/1bkwqni/which_amazing_games_were_you_sleeping_on_till/)
 
-#### Share this post
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-25.png)
 
-[![](https://substackcdn.com/image/fetch/w_520,h_272,c_fill,f_auto,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe09e19b1-70dc-4d37-8c69-0521c947b595_1920x1080.png)
+It is a lot of work to convince a friend to play a game. Players really have to put themselves out there and work hard to change a friend’s behavior. If your game is just “good” people won’t spend the extra effort to convince their friends to play your game.
 
-![The GameDiscoverCo newsletter](https://substackcdn.com/image/fetch/w_36,h_36,c_fill,f_auto,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc4ecd3b8-0264-4896-8b6e-4cfeffc01276_840x840.png)
+## Oversaturated Steam
 
-The GameDiscoverCo newsletter
+![](https://howtomarketagame.com/wp-content/uploads/2024/07/GamesRelease_2023.png)
 
-Steam's top-grossing games of 2024 revealed, analyzed](https://substack.com/home/post/p-153667998?utm_campaign=post&utm_medium=web)
+People love to complain about the 14,000 games that launch every year (I project 17,000 this year). Probably 70% of those games are “hobbyist” first time developers.
 
-Copy linkFacebookEmailNotesMore
+Those developers are not dragging you down. They have 0 effect on how well your game does. The Steam algorithm buries them before anyone can see them.
 
-1
+The real competition and the real oversaturation is among the “eh, good enough” games that have 150-ish reviews. Those games are good but missing something that makes them TRULY exciting to compete with the games that earn 1000s of reviews.
 
-[Share](javascript:void(0))
+## How to fix this?
+
+Unfortunately, this really is a game design problem. When a game gets 150 reviews but not more, that typically is a sign that a team did some great marketing to get a lot of people to wishlist and buy it at launch. Typically early adopters picked it up, tried it and went “ehhh, it’s ok.” That early “soft” reception is from the early adopters. When a game blows past the 150 review depth zone is because the game is so good those early adopters do “word of mouth.” Or the game is so good and exciting that when the Steam algorithm shows the game new people buy it immediately.
+
+The way to fix it is to change the game.
+
+It could be that the game has some jank. That can be fixed in code. But it is very hard to turn around initial perceptions.
+
+It could be the combination of genre + setting + graphics + hook just aren’t in sync. If that is the case, there isn’t much you can do. I don’t think you can tweak those once the game is out. The game is the game. It is better just to release and market a new one with a different combination of those factors.
+
+It could be that it just didn’t do anything new. But again, patching in new features or functions is not effective because of initial perceptions. It is better to direct those activities to new games.
+
+There are so many reasons.
+
+Game development is hard.
+
+This is also the reason why so few developers do well with their first game. Very subtle game design choices can have a big effect on how well a game does.
+
+Sorry I don’t have 1 easy fix that can make you earn $100,000.
+
+I just wanted to help explain why a game might not be selling well despite getting quite a few positive reviews.
