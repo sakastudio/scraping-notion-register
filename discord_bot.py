@@ -12,7 +12,7 @@ from notion_table import register_notion_table
 from title_translator import is_non_japanese_title, translate_title
 
 # 設定
-WATCH_CHANNEL_IDS = ["1350144742905876541"]
+WATCH_CHANNEL_IDS = ["1350334310452039680"]
 
 # URLの正規表現パターン
 URL_PATTERN = r'https?://[^\s)"]+'
