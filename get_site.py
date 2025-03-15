@@ -39,7 +39,21 @@ def fetch_and_convert_to_markdown(
     # ----------------------------- #
     # 2) URL から HTML を取得
     # ----------------------------- #
-    response = session.get(url)
+    # 一般的なブラウザのユーザーエージェントとヘッダーを設定
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Cache-Control': 'max-age=0',
+        'Referer': 'https://www.google.com/'
+    }
+    
+    # ヘッダーを追加してGETリクエストを送信
+    response = session.get(url, headers=headers)
     if response.status_code != 200:
         print(f"Failed to retrieve {url} (status code: {response.status_code})")
         return
@@ -133,7 +147,7 @@ def fetch_and_convert_to_markdown(
 
 if __name__ == "__main__":
     # 使い方例
-    test_url = "https://newsletter.gamediscover.co/p/steams-top-grossing-games-of-2024"
+    test_url = "https://howtomarketagame.com/2024/07/23/when-mostly-positive-games-dont-sell/"
     cookie_file = "cookies.json"  # クッキーファイル（JSON形式）
     
     # タイトルとマークダウンを取得
