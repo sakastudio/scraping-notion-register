@@ -1,7 +1,7 @@
 [
     {
         "domain": "newsletter.gamediscover.co",
-        "expirationDate": 1737709173.511456,
+        "expirationDate": 1742694483.706987,
         "hostOnly": true,
         "httpOnly": false,
         "name": "AWSALBTG",
@@ -10,11 +10,24 @@
         "secure": false,
         "session": false,
         "storeId": null,
-        "value": "WWgE69UAIBLK2BWR8l9BRzsi/2NPSsjO0XJx28rs1AdX3DRdv3/M3GmqD2jZOEyLc9+1fW5pBimHSSHpbHnJzH0VUOHRdLk8yItLhPtYmJrUEskFL7nsGbL7v/RaFzjRXq2aMANcsUcLWWO/ZOccLxsRWTJoShjxkhO3YkWw+dAY"
+        "value": "zMHlBp/aY0JCX13XEUrs/nIwfURA1atWVBaDy6ifLektoSq0dFIAqvWw8Be0vt+EQJNJ80KM0W+Oj+D6tYaxGN168kA1sUY0nn4SvSekErb0/LQJPyAscQlxLwe+bEubBN3zvhx2zFKQUcqNwXrIxN50C3rh8PLjsgA3h+hN2inQ"
+    },
+    {
+        "domain": "newsletter.gamediscover.co",
+        "expirationDate": 1772533655,
+        "hostOnly": true,
+        "httpOnly": false,
+        "name": "ajs_anonymous_id",
+        "path": "/",
+        "sameSite": null,
+        "secure": false,
+        "session": false,
+        "storeId": null,
+        "value": "%22a7993b93-5223-47ea-98e4-e9a9f7f757b4%22"
     },
     {
         "domain": ".newsletter.gamediscover.co",
-        "expirationDate": 1768640373.513098,
+        "expirationDate": 1773625683.709347,
         "hostOnly": false,
         "httpOnly": true,
         "name": "ab_testing_id",
@@ -23,11 +36,11 @@
         "secure": true,
         "session": false,
         "storeId": null,
-        "value": "%22b0ed2fe5-06aa-497f-828e-4ab66b3dd644%22"
+        "value": "%2209c60895-85fe-43f9-9bc9-0b04a0b8b1f7%22"
     },
     {
         "domain": ".newsletter.gamediscover.co",
-        "expirationDate": 1737106173.512978,
+        "expirationDate": 1742091483.709064,
         "hostOnly": false,
         "httpOnly": true,
         "name": "visit_id",
@@ -36,11 +49,11 @@
         "secure": false,
         "session": false,
         "storeId": null,
-        "value": "%7B%22id%22%3A%229e0a9b69-a14a-4b4e-b8c2-4b6c7ac6c8f0%22%2C%22timestamp%22%3A%222025-01-17T08%3A34%3A10.503Z%22%2C%22utm_source%22%3A%22post-email-title%22%7D"
+        "value": "%7B%22id%22%3A%2200960cd3-6b39-4cba-8d90-88b2c893bfcf%22%2C%22timestamp%22%3A%222025-03-16T01%3A47%3A47.443Z%22%7D"
     },
     {
         "domain": "newsletter.gamediscover.co",
-        "expirationDate": 1737709173.512523,
+        "expirationDate": 1742694483.708105,
         "hostOnly": true,
         "httpOnly": false,
         "name": "AWSALBTGCORS",
@@ -49,11 +62,11 @@
         "secure": true,
         "session": false,
         "storeId": null,
-        "value": "WWgE69UAIBLK2BWR8l9BRzsi/2NPSsjO0XJx28rs1AdX3DRdv3/M3GmqD2jZOEyLc9+1fW5pBimHSSHpbHnJzH0VUOHRdLk8yItLhPtYmJrUEskFL7nsGbL7v/RaFzjRXq2aMANcsUcLWWO/ZOccLxsRWTJoShjxkhO3YkWw+dAY"
+        "value": "zMHlBp/aY0JCX13XEUrs/nIwfURA1atWVBaDy6ifLektoSq0dFIAqvWw8Be0vt+EQJNJ80KM0W+Oj+D6tYaxGN168kA1sUY0nn4SvSekErb0/LQJPyAscQlxLwe+bEubBN3zvhx2zFKQUcqNwXrIxN50C3rh8PLjsgA3h+hN2inQ"
     },
     {
         "domain": ".gamediscover.co",
-        "expirationDate": 1768640362,
+        "expirationDate": 1773625669,
         "hostOnly": false,
         "httpOnly": false,
         "name": "mp_9c85fda7212d269ea46c3f6a57ba69ca_mixpanel",
@@ -62,11 +75,11 @@
         "secure": false,
         "session": false,
         "storeId": null,
-        "value": "%7B%22distinct_id%22%3A%20%22004de1f4-7658-44ba-a09e-78ba78f62b70%22%2C%22%24device_id%22%3A%20%22193e7e13042ca8-0645b66adb9a78-1e525636-16a7f0-193e7e13043ca8%22%2C%22utm_source%22%3A%20%22post-email-title%22%2C%22utm_medium%22%3A%20%22email%22%2C%22utm_campaign%22%3A%20%22email-post-title%22%2C%22%24initial_referrer%22%3A%20%22https%3A%2F%2Fopen.substack.com%2F%22%2C%22%24initial_referring_domain%22%3A%20%22open.substack.com%22%2C%22__mps%22%3A%20%7B%7D%2C%22__mpso%22%3A%20%7B%7D%2C%22__mpus%22%3A%20%7B%7D%2C%22__mpa%22%3A%20%7B%7D%2C%22__mpu%22%3A%20%7B%7D%2C%22__mpr%22%3A%20%5B%5D%2C%22__mpap%22%3A%20%5B%5D%2C%22%24user_id%22%3A%20%22004de1f4-7658-44ba-a09e-78ba78f62b70%22%7D"
+        "value": "%7B%22%24initial_referrer%22%3A%20%22%24direct%22%2C%22%24initial_referring_domain%22%3A%20%22%24direct%22%2C%22distinct_id%22%3A%20%22004de1f4-7658-44ba-a09e-78ba78f62b70%22%2C%22%24device_id%22%3A%20%2219599f4fd624417-0e685e5a55c5b8-1b525636-201b88-19599f4fd634417%22%2C%22utm_source%22%3A%20%22post-email-title%22%2C%22utm_medium%22%3A%20%22email%22%2C%22utm_campaign%22%3A%20%22email-post-title%22%2C%22__mps%22%3A%20%7B%7D%2C%22__mpso%22%3A%20%7B%7D%2C%22__mpus%22%3A%20%7B%7D%2C%22__mpa%22%3A%20%7B%7D%2C%22__mpu%22%3A%20%7B%7D%2C%22__mpr%22%3A%20%5B%5D%2C%22__mpap%22%3A%20%5B%5D%2C%22%24user_id%22%3A%20%22004de1f4-7658-44ba-a09e-78ba78f62b70%22%7D"
     },
     {
         "domain": ".newsletter.gamediscover.co",
-        "expirationDate": 1737105604.414909,
+        "expirationDate": 1742091446.28495,
         "hostOnly": false,
         "httpOnly": true,
         "name": "__cf_bm",
@@ -75,11 +88,11 @@
         "secure": true,
         "session": false,
         "storeId": null,
-        "value": "du8VtFfUmzHCcIhiyE9Y.qK8iUDG5iBBgAY4GFYTxJI-1737103804-1.0.1.1-M2e8G985Puazi8PRWDR0BRxo_GbW6nFR3..CsAuXbNXWoCqFOPk4ubO9nU2tW3Q0JsAfstwZ4COQVmoMK93rIg"
+        "value": "Q49_5VmAjNQcWI4yovrhCpvzgDWVraI4YRspKlcXD8E-1742089646-1.0.1.1-obY4g_s4jk2ktXiGrttB2BtO7tqO4IJwN24cvHgC6fxdjFmpEUdyqBHGTn7Em4__tjcTxhybNyvpq0QyDZo6a7ZZlHHdRDS3p4TlUqhoAwk"
     },
     {
         "domain": "newsletter.gamediscover.co",
-        "expirationDate": 1737105302,
+        "expirationDate": 1742090588,
         "hostOnly": true,
         "httpOnly": false,
         "name": "_dd_s",
@@ -88,11 +101,11 @@
         "secure": false,
         "session": false,
         "storeId": null,
-        "value": "expire=1737105273198&rum=0"
+        "value": "rum=0&expire=1742090576904"
     },
     {
         "domain": ".gamediscover.co",
-        "expirationDate": 1742538116,
+        "expirationDate": 1748773657,
         "hostOnly": false,
         "httpOnly": false,
         "name": "_gcl_au",
@@ -101,11 +114,11 @@
         "secure": false,
         "session": false,
         "storeId": null,
-        "value": "1.1.574727535.1734762116"
+        "value": "1.1.639792166.1740997657"
     },
     {
         "domain": ".newsletter.gamediscover.co",
-        "expirationDate": 1766298114.01297,
+        "expirationDate": 1772533653.869802,
         "hostOnly": false,
         "httpOnly": true,
         "name": "ab_experiment_sampled",
@@ -118,7 +131,7 @@
     },
     {
         "domain": ".newsletter.gamediscover.co",
-        "expirationDate": 1768640373.512797,
+        "expirationDate": 1773625683.708534,
         "hostOnly": false,
         "httpOnly": false,
         "name": "ajs_anonymous_id",
@@ -131,7 +144,7 @@
     },
     {
         "domain": "newsletter.gamediscover.co",
-        "expirationDate": 1744880373.513205,
+        "expirationDate": 1749865683.709591,
         "hostOnly": true,
         "httpOnly": true,
         "name": "connect.sid",
@@ -140,11 +153,11 @@
         "secure": false,
         "session": false,
         "storeId": null,
-        "value": "s%3A2VHhd9ghxcRRgBCDHId4bxCYzrtAhr43.NZ7OJ5kPBW2mfpoqNNGUGnLOcC9%2BgoyMut5J9Tc38Rg"
+        "value": "s%3AYtFDqwtHnPm2ns_kd9iFCqHcIfs0LQPH.C27ZzHixWjVLTZcDELf1sqEOng1ejSkLuRqqEBkd8oc"
     },
     {
         "domain": ".newsletter.gamediscover.co",
-        "expirationDate": 1742538114.014184,
+        "expirationDate": 1748773656.202069,
         "hostOnly": false,
         "httpOnly": false,
         "name": "cookie_storage_key",
@@ -153,19 +166,6 @@
         "secure": true,
         "session": false,
         "storeId": null,
-        "value": "3f0a64f5-8d75-4fcc-b7e7-5d99c32d32c1"
-    },
-    {
-        "domain": "newsletter.gamediscover.co",
-        "expirationDate": 1771662675.113112,
-        "hostOnly": true,
-        "httpOnly": false,
-        "name": "intro_popup_last_hidden_at",
-        "path": "/",
-        "sameSite": null,
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "2025-01-17T08:31:15.113Z"
+        "value": "4ad90124-4aef-4fec-998d-1443cebe83f3"
     }
 ]
