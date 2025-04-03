@@ -1,176 +1,106 @@
-I see this a lot. I have worked on games like this:
+[iframe](https://substack.com/channel-frame)
 
-A well-crafted game releases that have sales that are ok, but not great. And these games did everything right! They followed the basic marketing meta of entering into festivals, sending their demo to content creators, creating a tiktok account, just to name a few. They released with a decent number of wishlists (10,000 or maybe even 30,000). They got into popular upcoming (maybe even New & Trending). The game has no major bugs, and the game is made by an experienced team, not some first-time, hobbyist project. But within the first month of launch the game stalls out at 150ish reviews. The reviews are “very positive” (average user review score is 88%-95% positive).
+[![The GameDiscoverCo newsletter](https://substackcdn.com/image/fetch/w_80,h_80,c_fill,f_auto,q_auto:good,fl_progressive:steep,g_auto/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc4ecd3b8-0264-4896-8b6e-4cfeffc01276_840x840.png)](https://newsletter.gamediscover.co/)
 
-At this point the developers throw their hands up and say “WHAT DO YOU WANT STEAM?!? I have very positive reviews but no sales? No major bugs! WHY WON’T YOU SHOW MY GAME!?!”
+# [The GameDiscoverCo newsletter](https://newsletter.gamediscover.co/)
 
-“If only Steam would show my game more, I would be able to sell more copies!”
+SubscribeSign in
 
-In this blog post I am going to explain what I think is going on.
+# Schedule I's solo smash hit & the rise of the 'crewlike'
 
-## Excitement is the unmeasurable factor
+### Also: lots of discovery news, and plenty of Steam analysis for Plus/Pro subs.
 
-There are so many games released every day that players can be picky. There are hundreds of “good” games out there and players have huge backlogs of unplayed games. They can be picky.
+[Simon Carless](https://substack.com/@simoncarless)
 
-In fact, players are picky.
+Mar 28, 2025
 
-Steam fans can play the most exciting games that are in their favorite genre and never run out of content.
+∙ Paid
 
-I am more and more convinced that the Steam algorithm is built around elevating games that have that certain “magic” that have some *“je ne sais quoi”* that  makes people buy it right away, start playing it, sharing it with their friends, posting about it on social media, and recommending it to their favorite content creator (and that creator playing it over and over again).
+14
 
-There are “good” games and then there are EXCITING games that make people buy them right away.
+[View comments (0)](https://newsletter.gamediscover.co/p/schedule-is-solo-smash-hit-and-the/comments)
+1
 
-There is nothing wrong with just “good” games. A good game has no real flaws. But a “good” game doesn’t stop people in their tracks and demand that they play it.
+[Share](javascript:void(0))
 
-Ultimately these games with 150ish “very positive” reviews  stalled because they were “good.” They were “fine.”
+_\[The [GameDiscoverCo game discovery newsletter](http://newsletter.gamediscover.co/) is written by ‘how people find your game’ expert & company founder Simon Carless, and is a regular look at how people discover and buy video games in the 2020s.\]_
 
-[Wanderbots touched on this phenomenon with his blog post called “Escaping Coverage Limbo](https://www.wanderbots.com/blog/escaping-game-coverage-limbo). In short, he explains that when someone sends their game to him for coverage, he never gives definitive “no I won’t cover your game” because it isn’t that he hates your game, it is just that other games are more exciting and more relevant to him, and they jump the queue to get covered before yours.
+Congratulations, you’ve quested as far as Friday, game discovery adventurers. Now you have to [guess the name](https://en.wikipedia.org/wiki/Rumpelstiltskin) of the [troll who guards the bridge](https://en.wikipedia.org/wiki/Three_Billy_Goats_Gruff) to make it across to the weekend. (Given that description, presumably he’s a _‘platform gatekeeper’_, \*rimshot\*.)
 
-Similar to review scores, streamers don’t play your game not because it is bad, but it just isn’t AMAZING!
+Talking of mythical quests, given the popularity of Western _‘social deception’_ video games [like Goose Goose Duck](https://newsletter.gamediscover.co/p/how-goose-goose-duck-hit-700k-ccu) in China, we recommend reading Adrian Hon’s new piece [on the Chinese](https://mssv.net/2025/03/26/heres-what-makes-jubensha-different/) _[‘jubensha’](https://mssv.net/2025/03/26/heres-what-makes-jubensha-different/)_ [scripted murder mystery craze](https://mssv.net/2025/03/26/heres-what-makes-jubensha-different/). It’s a great view on the _“distributed cognition and group sensemaking”_ that makes these social interactions tick.
 
-## The missing metric
+## Game discovery news: Assassin’s interest high?
 
-When developers look at their review scores and see “95% positive” reviews they don’t see the secret metric which is “how many players just looked at the game and passed.”
+[![](https://newsletter.gamediscover.co/p/fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F5b1d3dcb-130c-475a-ad7c-5d100c961cc5_1000x513.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F5b1d3dcb-130c-475a-ad7c-5d100c961cc5_1000x513.jpeg)
 
-Those players thought “eh, looks fine, maybe later.”
+Let’s finish off the week by a look at the notable game discovery and platform news - yes, we just cover that, not ‘everything else’ - for the last few days:
 
-The number of positive reviews don’t capture EXCITEMENT. If someone isn’t excited about your game, they don’t buy it. They don’t play it. They don’t leave a review.
+- Looking at [Footprints.gg’s top](https://www.linkedin.com/pulse/footprints-weekly-tracking-games-media-coverage-icopartners-ljawe/) _[‘trad media’](https://www.linkedin.com/pulse/footprints-weekly-tracking-games-media-coverage-icopartners-ljawe/)_ [mentions from March 19th-25th](https://www.linkedin.com/pulse/footprints-weekly-tracking-games-media-coverage-icopartners-ljawe/), Assassin’s Creed Shadows gets a lot of the love, followed by Minecraft (movie hype and new content), Switch 2 (duh), and the still-hot Monster Hunter Wilds. (Notice there’s nothing on Schedule I, showing ‘trad’ vs. ‘new’ media diffs.)
 
-## Opportunity cost
+- Nintendo’s [final Switch 1 Direct streaming showcase](https://www.youtube.com/watch?v=9OqoRxXUjGA) ( [press deets](https://www.businesswire.com/news/home/20250327383212/en/Latest-Nintendo-Direct-Reveals-Nintendo-Switch-Games-Virtual-Game-Cards-and-a-New-Smart-Device-App-Nintendo-Today)) had some neat game showcases, including Pokémon Legends: Z-A _,_ Metroid Prime 4: Beyond, and Marvel Cosmic Invasion. There was also [some small print hinting](https://www.videogameschronicle.com/news/nintendo-small-print-suggests-some-switch-games-will-get-enhanced-switch-2-editions/) that some existing Switch games will get enhanced ‘Switch 2 Editions’, which… makes sense?
 
-This is where the frustration comes in. Developers look at their 95% positive review scores and curse in the general direction of Steam yelling “WHY WON’T YOU SHOW MY GAME MORE! 95% of people like it!”
+- But the big Nintendo platform announce - before [April 4th’s Switch 2 reveal](https://www.nintendo.com/successor/en-us/nintendo-direct/index.html), and [besides a Nintendo Today! smartphone news app](https://www.nintendo.com/us/store/products/nintendo-today-mobile/) \- is [Nintendo’s new ‘virtual game cards’](https://arstechnica.com/gaming/2025/03/nintendos-new-system-for-sharing-digital-switch-games-explained/), a solution to waning physical sales and multi-device sharing that _“will allow players to ‘load’ and ‘eject’ digital games via a dedicated management screen.”_
 
-That is not how it works though.
+- Feedback on this new Switch _‘virtual game card’_ feature is it’ll be good for family groups. [One Ars Technica commenter says](https://arstechnica.com/gaming/2025/03/nintendos-new-system-for-sharing-digital-switch-games-explained/?comments-page=1#comments): _“I and my 3 kids all have Switches, and family library sharing has been the biggest weakness of this platform vs Steam or the Play store.”_ (Easier digital game sharing also helps with Switch 2 upgrades…)
 
-95% positive does not mean that 95% of all people like the game. It just means 95% of the people who were excited enough to buy it, recommended the game.
+- Final numbers on GDC 2025 were that [there were](https://www.businesswire.com/news/home/20250325488163/en/Game-Developers-Conference-2025-and-GDC-Nights-Draw-to-a-Successful-Close-With-Nearly-30000-Attendees-Including-6000-Attendees-for-the-Inaugural-GDC-Nights) _[“nearly 30,000 registered attendees”](https://www.businesswire.com/news/home/20250325488163/en/Game-Developers-Conference-2025-and-GDC-Nights-Draw-to-a-Successful-Close-With-Nearly-30000-Attendees-Including-6000-Attendees-for-the-Inaugural-GDC-Nights)_, as it confirmed GDC 2026 for March 9th-13th in San Francisco. (Similar #s to 2024 - not sure if _‘including 6k GDC Nights attendees’_ is doing any work here, or if attendance just had a newer or one-day Expo bent.)
 
-The key number Valve uses to determine what games to promote is not review positivity, or “visits”, it only cares about dollars earned.
+- The [latest Chinese gov game approvals](https://www.linkedin.com/pulse/tencent-launches-dragonheir-silent-gods-china-niko-partners-mxhlc/) finally includes _“Black Myth: Wukong, which added a PS5 release to its already existing ISBN for PC.”_ (Yes, Black Myth has sold nearly 4 million PS5 copies in China - per GameDiscoverCo estimates - without official government approval, thx to gray-market consoles.)
 
-Steam knows exactly how much money your game earns when they show it. And you are compared to all other games on the platform.
+- Full-service _‘global game developer’_ Virtuos commissioned a study with Newzoo on [why Switch (and Switch 2?) might be an under-served porting opportunity](https://www.installbaseforum.com/threads/newzoo-x-virtuos-nintendo-switch-games-analysis.3576/) for larger games. It’s effectively a services pitch, but also has some interesting data, noting Skyrim, The Witcher 3, and Diablo II all did decently on Switch.
 
-Let me get specific.
+- Now that everything is an Xbox (not just [dubious fridges](https://www.reddit.com/r/XboxSeriesX/comments/13c542n/how_is_everyones_seriesx_mini_fridge_holding_up/)), mobile game controller add-on firm Backbone [has launched Backbone One - Xbox Edition](https://backbone.com/xbox/?irclickid=0DnWiBWrUxyPWchRfv0ZO18OUks3NL28e0z9VM0), translucent green-stylee, with an Xbox button on the controller - and is designed to play Game Pass Cloud titles easily from your phone.
 
-This is the Special Offers widget and is one of the ways that Valve promotes a game that it believes in. [(For more info on how to get a Daily Deal or other Special Offer, read this blog post)](https://howtomarketagame.com/2024/04/29/how-to-get-special-daily-deal-featuring-on-the-steam-front-page/)
+- Here’s [some interesting research](https://www.pushtotalk.gg/p/predicting-game-performance-via-youtube) \- partly using GDCo data - from ex-Riot insights director Christian Yoder - showing that when sentiment analyzing YouTube trailer videos, _“comments like, “The 3D just ruined it…’ just don’t seem to have any bearing on whether the game will do well, at least when looking at smaller indie titles.”_
 
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-13-1024x468.png)
+- Amazon’s Luna cloud gaming service has announced _“ [a “multi-year” deal with EA](https://9to5google.com/2025/03/27/amazon-luna-ea-star-wars-games-new-countries/) which will see Amazon Luna adding Dead Space and the two “Star Wars Jedi” titles, Fallen Order and Survivor. ‘More games’ are said to be coming soon, and EA titles are available on all platforms where Amazon Luna is streaming.”_
 
-This widget can only promote 19 games per day.
+- Here’s more from MPG on [the success of](https://maxpowergaming.co/so/bcPND-Xpq) _[‘moving base’](https://maxpowergaming.co/so/bcPND-Xpq)_ [Roblox game Dead Rails](https://maxpowergaming.co/so/bcPND-Xpq), also redolent of ancient Roblox hit [Build A Boat For Treasure](https://www.roblox.com/games/537413528/Build-A-Boat-For-Treasure). Talking of which, we all need to pay more attention to [the Roblox top CCU charts](https://bloxmetrics.com/experiencesRanking?v=ccu&prev=%2Frankings%3Ff%3Dccu&blockType=ccu&filterAll=true) \- look how well _‘fishing adventure’_ [Fisch](https://www.roblox.com/games/16732694052/1-DAY-Fisch) is doing recently _(#3, 276k CCU),_ given it’s only a year old..
 
-If you just have a “good” game, and Steam puts you in this widget you could probably earn a decent amount of money. I have seen a lot of just “good” games earn $10,000 for a “Daily Deal” aka “Today’s deal!”
+- Microlinks: [PlayStation Plus’ monthly games for April 2025](https://blog.playstation.com/2025/03/26/playstation-plus-monthly-games-for-april-robocop-rogue-city-the-texas-chain-saw-massacre-digimon-story-cyber-sleuth-hackers-memory/) are RoboCop: Rogue City, The Texas Chain Saw Massacre, and Digimon Story; streaming showcase [The Triple-I Initiative is back on April 10th](https://www.youtube.com/watch?v=zWldd4HloWk) with _“30+ game announcements in 45 minutes”;_ PC/Game Pass Ultimate folks [are getting new F2P game bonuses](https://news.xbox.com/en-us/2025/03/26/game-pass-free-to-play-benefits/) from Heroes Of The Storm, Naraka: Bladepoint, Smite 2, The Finals & more.
 
-But there are lots of other games that if Valve put them in that widget, they will earn $20,000.
 
-So YES, your game has 95% positive reviews. And yes there would be some people who would be excited and like your game. And yes if your game is shown in the Special Offers section you will earn a lot of money. But, in the eyes of the Valve algorithms, your game is taking up a slot of a game that could earn even more money, and could make even more people happy.
+## Schedule I’s solo smash & the rise of the 'crewlike'
 
-[This is “Opportunity Cost” aka the potential benefits a business misses out on when choosing one alternative over another.](https://www.investopedia.com/terms/o/opportunitycost.asp)
+[![](https://newsletter.gamediscover.co/p/fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F7ec9dbc4-1e00-4f69-94d6-d0d614193193_800x456.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F7ec9dbc4-1e00-4f69-94d6-d0d614193193_800x456.jpeg)
 
-Opportunity Cost is the reason many “good” games stall out at 150 reviews that are “very positive.”
+By way of context, we [posted this on LinkedIn](https://www.linkedin.com/posts/simoncarless_valve-has-just-given-solo-indie-megahit-schedule-activity-7310837300601442305-AvHb) yesterday: _“Valve has just given [solo indie megahit Schedule I](https://store.steampowered.com/app/3164500/Schedule_I/) a rare editorial 'front-page takeover' feature on Steam, two days after its release. Why?_
 
-It is good, but there are games that perform even better under similar conditions so Valve emphasizes those games instead of yours.
+_”Well, the goofy first-person co-op drug dealer sim hit 68,000 CCU within 2 hours of its debut, thanks to massive influencer play, and [recently peaked at 190k CCU](https://steamdb.info/app/3164500/charts/). It's currently #8 across all of Steam on Most-Played Games by CCU And yes, it’s chiefly made by [one Australian dev](https://www.scheduleonegame.com/presskit/schedule-one/index.html), who stands to make tens of millions of dollars in Schedule I's first month.”_
 
-## Signs of lack of excitement.
+So, on the one hand, this is crazy. But on the other - we already knew that [Schedule I’s ‘Free Sample’ demo](https://store.steampowered.com/app/3205720/Schedule_I_Free_Sample/) started [blowing up with influencers](https://steamdb.info/app/3205720/charts/#3m) at the beginning of March - the game made our unreleased Steam ‘trending’ chart multiple times this month.
 
-Developers love to complain about Steam reviewers being idiots (especially when they see reviews that are like “100 hours on record” review: “not enough content”). But overall, I think Steam reviewers are very good and really perceptive about the weaknesses of a game.
+[![](https://newsletter.gamediscover.co/p/fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F0e2d83ab-8ee4-4eb0-8acb-47ed482bd533_1000x563.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F0e2d83ab-8ee4-4eb0-8acb-47ed482bd533_1000x563.jpeg)
 
-For games that “stall out” at 150 reviews that are 95% positive, I usually see “faint praise” and they usually fall into these categories.
+And if you look at some of the underlying inspirations for this game, you can see why it’s gone so huge. Here’s some of our main conclusions:
 
-Note: All of the reviews I show here are from real games that achieved review ratings in the 80-98% positive range, but are from games that are stuck in that 150-ish review range.
+- **Schedule I has a great twist on the** _**‘first-person leveling-up’**_ **simulator grind:** since [Supermarket Simulator](https://store.steampowered.com/app/2670630/Supermarket_Simulator/) unlocked a perfect combo of resource management and small business grind in Feb. 2024, there’s been a series of _‘simulator’_ games that are easy and intuitive to control, and have the gameplay loop dialed-in.
 
-### Reason #1: Good but not exciting
+- **Ever since Breaking Bad, the** _**‘drug dealer sim’**_ **angle seems a tad more human:** there’s def. immorality in a game where you deal illegal substances. But PlayWay-ish hit [Drug Dealer Simulator](https://store.steampowered.com/app/682990/Drug_Dealer_Simulator/) always felt more grim and fiddlier than Schedule I, which has South Park-ish characters and wit. (Also, weed is legal some places! Though Schedule I also has you dealing meth and cocaine later in the game, hm.)
 
-Here are a couple examples:
+- **Co-op adds way more streamability and depth to a single-player experience:** Schedule I plays really well solo, [as YouTubers show](https://youtu.be/WvzukQyYGKI). But it’s getting a lot of added juice (ha ha) and influencer reach from [super-entertaining co-op](https://www.youtube.com/watch?v=Ec8i7uXlBW4) [gameplay](https://www.youtube.com/watch?v=Ec8i7uXlBW4). Your fave streamers hiding in a dumpster from the cops? Perfectly delightful!
 
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-14.png)
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-15.png)
 
-### Reason #2: Not enough content or lack of depth
+In many ways, Schedule I is pitched perfectly between the _‘first-person job simulator’_ genre (Supermarket Sim, [TCG Shop Sim](https://store.steampowered.com/app/3070070/TCG_Card_Shop_Simulator/)) and the co-op _‘hang out with your crew’_ horror adventure sim (see co-op horror smash [R.E.P.O](https://store.steampowered.com/app/3241660/REPO/), which is also at 190k CCU right now.)
 
-Steam players love DEEEEP, LOOOONG games ([even though many devs erroneously assume they want short games that respect their time](https://howtomarketagame.com/2023/05/30/respect-players-time-by-making-longer-games/)).
+[iframe](https://www.youtube-nocookie.com/embed/Ec8i7uXlBW4?rel=0&autoplay=0&showinfo=0&enablejsapi=0)
 
-Often reviewers will use the phrase “great first version, will check back for more content”
+So Schedule I is **super easy to play - with a good, clear UI**. But it **still has some entertaining complexity** \- a GTA-style ‘Wanted’ status, lots of buildout possibilities for your stash house. This makes it **an experience that’s accessible to basically all adults**. And the fact all your favorite streamers are having hella fun in it? Yep.
 
-Or
+So we’d actually like to **propose a new game subgenre here: the ‘crewlike’.** Our definition of a crewlike is simply _‘any first-person game where you’re hanging out and voice chatting with your crew, while jointly accomplishing in-game goals’._
 
-“It lacks depth”
+Even if you don’t have a crew to play Schedule I with, it’s clear that its **co-op mode makes it way more watchable and streamable on social video**. And that’s one of the things fueling its tremendous growth - besides **its slightly taboo subject** and its **well-designed core gameplay loop**. (GTA has [drug dealer roleplay too](https://www.youtube.com/watch?v=m_mGCK0M9QU), by the way.)
 
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-16.png)
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-18.png)
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-27.png)
+The biggest takeaway? Tyler, the dev of this game, **made it in Unity in ~3 years [as a solo project](https://www.reddit.com/r/CoOpGaming/comments/1hx5yvn/comment/m66kq1r/?context=3)**. The **democratization of game engines** makes building a giant hit as a solo dev 100% possible, even with tricky tech like online co-op. And with audiences **not being worried about graphical fidelity in this genre**, the field’s super wide open.
 
-### Reason #3: Slight jank
+_\[ADDENDUM: the dev had [an interesting Reddit post about the game’s name](https://www.reddit.com/r/gamedev/comments/1hcvm9z/am_i_kneecapping_myself_with_my_games_name/), before it blew up. He asked: ‘I’m a bit worried that the name ‘Schedule I’ is a bit niche or vague and may be limiting my audience.’ His fellow Redditors said: ‘I think you’re probably overthinking it’. I will say SEO is pretty bad for the word ‘Schedule I’ tho, haha, since it’s insufficiently unique. But look, who cares if everyone just comes to Steam and searches for the game name?\]_
 
-When I released my first games I underestimated how perfect a game must feel. I didn’t realize how much polish games require. I ignored edge cases that I should have smoothed out. Even simple games must feel perfect to the end player.
+## This week on Steam: a triumvirate of big launches!
 
-In today’s market, just a bit of jank can sink a game. This is also genre dependent too. Part of the reason platformers and souls-likes are so risky to make is that there are so many of them that they must be absolutely flawless in execution or fans will pick them apart. Other genres such as horror are allowed a BIT more janky (but not much more).
+[![](https://newsletter.gamediscover.co/p/fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F2d38fc1f-5bb8-4b71-a1bf-276a3cd6b870_800x400.jpeg)](https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F2d38fc1f-5bb8-4b71-a1bf-276a3cd6b870_800x400.jpeg)
 
-Relevant reviews. Look at how these reviews list a bunch of seemingly minor issues, but when they are added together, it seems like this game is a bit janky.
+## This post is for paid subscribers
 
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-19.png)
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-20.png)
+[Subscribe](https://newsletter.gamediscover.co/subscribe?simple=true&next=https%3A%2F%2Fnewsletter.gamediscover.co%2Fp%2Fschedule-is-solo-smash-hit-and-the&utm_source=paywall&utm_medium=web&utm_content=160037221)
 
-### Reason #4: Game genre mismatch
-
-Sometimes screenshots and trailers make people assume a game is in one genre, but once they play the game, they realize that the [game was missing key genre anchors](https://howtomarketagame.com/2019/12/23/know-your-games-anchor) and doesn’t match their taste preferences. Essentially “The game is fine, just not my cup of tea”
-
-Here are some example reviews:
-
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-21.png)
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-22.png)
-
-### Reason #5: Oversaturated genres with high quality games
-
-In this category the game is fine, but it is being compared to the biggest games in the genre.
-
-These reviews typically popup up in genres with a clear market leader or one that is VERY VERY high quality.
-
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-23.png)
-
-Look at this final review, it is literally describing opportunity cost. There are other games that are better than this one so by playing this game you are missing out on others.
-
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-24.png)
-
-## Word of mouth
-
-One of the big reasons “good but not great” games don’t sell well is that they miss out on word of mouth. In all my market research I found that a lot of people buy games after they are recommended by their friends.
-
-Word of mouth operates outside of the Steam platform. It occurs in Discord DMs, text messages, and in-person conversations in the break room at work. There is no metric in the Steamworks backend that can show “word of mouth.” It is super important, we just can’t measure it.
-
-This is why I call it “magic” when a game sells well. It is because un-measurable activity is occurring outside of Steam that is driving people to buy your game.
-
-[I found this meme posted on r/steam a while ago and it confirms exactly what I have found:](https://www.reddit.com/r/Steam/comments/1bkwqni/which_amazing_games_were_you_sleeping_on_till/)
-
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/image-25.png)
-
-It is a lot of work to convince a friend to play a game. Players really have to put themselves out there and work hard to change a friend’s behavior. If your game is just “good” people won’t spend the extra effort to convince their friends to play your game.
-
-## Oversaturated Steam
-
-![](https://howtomarketagame.com/wp-content/uploads/2024/07/GamesRelease_2023.png)
-
-People love to complain about the 14,000 games that launch every year (I project 17,000 this year). Probably 70% of those games are “hobbyist” first time developers.
-
-Those developers are not dragging you down. They have 0 effect on how well your game does. The Steam algorithm buries them before anyone can see them.
-
-The real competition and the real oversaturation is among the “eh, good enough” games that have 150-ish reviews. Those games are good but missing something that makes them TRULY exciting to compete with the games that earn 1000s of reviews.
-
-## How to fix this?
-
-Unfortunately, this really is a game design problem. When a game gets 150 reviews but not more, that typically is a sign that a team did some great marketing to get a lot of people to wishlist and buy it at launch. Typically early adopters picked it up, tried it and went “ehhh, it’s ok.” That early “soft” reception is from the early adopters. When a game blows past the 150 review depth zone is because the game is so good those early adopters do “word of mouth.” Or the game is so good and exciting that when the Steam algorithm shows the game new people buy it immediately.
-
-The way to fix it is to change the game.
-
-It could be that the game has some jank. That can be fixed in code. But it is very hard to turn around initial perceptions.
-
-It could be the combination of genre + setting + graphics + hook just aren’t in sync. If that is the case, there isn’t much you can do. I don’t think you can tweak those once the game is out. The game is the game. It is better just to release and market a new one with a different combination of those factors.
-
-It could be that it just didn’t do anything new. But again, patching in new features or functions is not effective because of initial perceptions. It is better to direct those activities to new games.
-
-There are so many reasons.
-
-Game development is hard.
-
-This is also the reason why so few developers do well with their first game. Very subtle game design choices can have a big effect on how well a game does.
-
-Sorry I don’t have 1 easy fix that can make you earn $100,000.
-
-I just wanted to help explain why a game might not be selling well despite getting quite a few positive reviews.
+[Already a paid subscriber? **Sign in**](https://substack.com/sign-in?redirect=%2Fp%2Fschedule-is-solo-smash-hit-and-the&for_pub=gamediscoverability&change_user=false)
