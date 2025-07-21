@@ -23,49 +23,42 @@ def fetch_and_convert_to_markdown(
     戻り値:
         tuple: (タイトル, 変換されたマークダウンコンテンツ)のタプル
     """
-    try:
-        # Firecrawlクライアントを初期化
-        app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
+    # Firecrawlクライアントを初期化
+    app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
-        # クッキーファイルを読み込む
-        cookies = {}
-        if os.path.exists(cookie_file_path):
-            with open(cookie_file_path , 'r' , encoding='utf-8') as f:
-                cookies_data = json.load(f)
+    # クッキーファイルを読み込む
+    cookies = {}
+    if os.path.exists(cookie_file_path):
+        with open(cookie_file_path , 'r' , encoding='utf-8') as f:
+            cookies_data = json.load(f)
 
-            # クッキー文字列を作成
-            cookie_str = ""
-            for cookie in cookies_data:
-                cookie_str += f"{cookie['name']}={cookie['value']}; "
+        # クッキー文字列を作成
+        cookie_str = ""
+        for cookie in cookies_data:
+            cookie_str += f"{cookie['name']}={cookie['value']}; "
 
-            if cookie_str:
-                cookies = {"Cookie": cookie_str.strip()}
+        if cookie_str:
+            cookies = {"Cookie": cookie_str.strip()}
 
-        # Firecrawlのパラメータを設定
-        params = {
-            "formats": ["markdown" , "html"] ,
-            "headers": cookies  # headersに直接クッキー情報を渡す
-        }
+    # Firecrawlのパラメータを設定
+    params = {
+        "formats": ["markdown" , "html"] ,
+        "headers": cookies  # headersに直接クッキー情報を渡す
+    }
 
-        # URLからコンテンツを取得
-        response = app.scrape_url(url , params=params)
+    # URLからコンテンツを取得
+    response = app.scrape_url(url , params=params)
 
-        # レスポンスからマークダウンとメタデータを取得
-        if response and "markdown" in response:
-            markdown_content = response.get("markdown" , "")
-            title = response["metadata"].get("title" , "")
+    # レスポンスからマークダウンとメタデータを取得
+    if response and "markdown" in response:
+        markdown_content = response.get("markdown" , "")
+        title = response["metadata"].get("title" , "")
 
-            # タイトルが取得できない場合はURLをタイトルとして使用
-            if not title:
-                title = url
+        # タイトルが取得できない場合はURLをタイトルとして使用
+        if not title:
+            title = url
 
-            return (title , markdown_content)
-        else:
-            print(f"Error: Unable to fetch content from {url}")
-            return (None , None)
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return (None , None)
+        return (title , markdown_content)
 
 
 if __name__ == "__main__":
