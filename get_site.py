@@ -23,6 +23,10 @@ def fetch_and_convert_to_markdown(
     戻り値:
         tuple: (タイトル, 変換されたマークダウンコンテンツ)のタプル
     """
+    # ★ 追加: APIキー未設定の明示的な検出
+    if not FIRECRAWL_API_KEY:
+        raise EnvironmentError("FIRECRAWL_API_KEY が設定されていません。環境変数を確認してください。")
+
     # Firecrawlクライアントを初期化
     app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
@@ -47,16 +51,32 @@ def fetch_and_convert_to_markdown(
         headers=cookies
     )
 
+    # ★ 追加: 異常系は必ず例外を投げる（Noneを返さない）
+    if not response:
+        raise RuntimeError(f"Firecrawlが空のレスポンスを返しました: url={url}")
+
+    if not isinstance(response, dict):
+        raise TypeError(f"Firecrawlのレスポンス型が想定外です: type={type(response).__name__}, url={url}")
+
+    # Firecrawl側のエラーフィールドを素直に拾う（ライブラリの仕様差異に広めに対応）
+    if response.get("error"):
+        raise RuntimeError(f"Firecrawlエラー: {response.get('error')} (url={url})")
+    if response.get("status") == "error":
+        msg = response.get("message") or response.get("error") or "unknown error"
+        raise RuntimeError(f"Firecrawl status=error: {msg} (url={url})")
+
+    if "markdown" not in response:
+        raise ValueError(f"Firecrawlレスポンスに 'markdown' キーがありません。keys={list(response.keys())} (url={url})")
+
     # レスポンスからマークダウンとメタデータを取得
-    if response and "markdown" in response:
-        markdown_content = response.get("markdown" , "")
-        title = response["metadata"].get("title" , "")
+    markdown_content = response.get("markdown" , "")
+    title = response.get("metadata", {}).get("title" , "")
 
-        # タイトルが取得できない場合はURLをタイトルとして使用
-        if not title:
-            title = url
+    # タイトルが取得できない場合はURLをタイトルとして使用
+    if not title:
+        title = url
 
-        return (title , markdown_content)
+    return (title , markdown_content)
 
 
 if __name__ == "__main__":
