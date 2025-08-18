@@ -9,7 +9,7 @@ FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY")
 
 
 def fetch_and_convert_to_markdown(
-        url: str ,
+        url: str,
         cookie_file_path: str = "cookies.json"
 ):
     """
@@ -48,15 +48,19 @@ def fetch_and_convert_to_markdown(
     )
 
     # レスポンスからマークダウンとメタデータを取得
-    if response and "markdown" in response:
-        markdown_content = response.get("markdown" , "")
-        title = response["metadata"].get("title" , "")
+    if response and isinstance(response, dict) and "markdown" in response:
+        markdown_content = response.get("markdown", "")
+        metadata = response.get("metadata", {}) or {}
+        title = metadata.get("title", "")
 
         # タイトルが取得できない場合はURLをタイトルとして使用
         if not title:
             title = url
 
-        return (title , markdown_content)
+        return (title or url, markdown_content)
+
+    # 期待するレスポンスでない場合でも常にタプルを返す
+    return (url, "")
 
 
 if __name__ == "__main__":
