@@ -51,30 +51,61 @@ def fetch_and_convert_to_markdown(
         headers=cookies
     )
 
-    # ★ 追加: 異常系は必ず例外を投げる（Noneを返さない）
-    if not response:
-        raise RuntimeError(f"Firecrawlが空のレスポンスを返しました: url={url}")
+    # --- ここから型差異を吸収する共通化処理（最小追加） ---
+    def _to_dict(obj):
+        """firecrawlの型付きレスポンス(ScrapeResponse等)やPydanticをdictに正規化"""
+        if isinstance(obj, dict):
+            return obj
+        # Pydantic v2
+        if hasattr(obj, "model_dump"):
+            try:
+                return obj.model_dump()
+            except Exception:
+                pass
+        # Pydantic v1
+        if hasattr(obj, "dict"):
+            try:
+                return obj.dict()
+            except Exception:
+                pass
+        # dataclass/任意オブジェクトの __dict__
+        if hasattr(obj, "__dict__"):
+            try:
+                return dict(obj.__dict__)
+            except Exception:
+                pass
+        return None
 
-    if not isinstance(response, dict):
+    resp_dict = _to_dict(response)
+    if not resp_dict:
+        # ここでこけている（ScrapeResponse 等）ケースを明示
         raise TypeError(f"Firecrawlのレスポンス型が想定外です: type={type(response).__name__}, url={url}")
 
-    # Firecrawl側のエラーフィールドを素直に拾う（ライブラリの仕様差異に広めに対応）
-    if response.get("error"):
-        raise RuntimeError(f"Firecrawlエラー: {response.get('error')} (url={url})")
-    if response.get("status") == "error":
-        msg = response.get("message") or response.get("error") or "unknown error"
-        raise RuntimeError(f"Firecrawl status=error: {msg} (url={url})")
+    # RESTの生レスポンスに近い形（success/data）にも、SDKが直接（markdown/metadata）にも対応
+    container = resp_dict.get("data", resp_dict)
 
-    if "markdown" not in response:
-        raise ValueError(f"Firecrawlレスポンスに 'markdown' キーがありません。keys={list(response.keys())} (url={url})")
+    # バッチ/クロール由来で list の可能性に保険（scrape_url で来たら通常は単一）
+    if isinstance(container, list):
+        if len(container) == 1:
+            container = container[0]
+        else:
+            raise ValueError(f"複数項目のレスポンスを受け取りました（想定外）: count={len(container)} url={url}")
+
+    # Firecrawl 側エラーフィールドの拾い上げ
+    if isinstance(container, dict) and container.get("error"):
+        raise RuntimeError(f"Firecrawlエラー: {container.get('error')} (url={url})")
+
+    # --- ここまで共通化処理 ---
 
     # レスポンスからマークダウンとメタデータを取得
-    markdown_content = response.get("markdown" , "")
-    title = response.get("metadata", {}).get("title" , "")
+    if not isinstance(container, dict):
+        raise TypeError(f"レスポンス本体の型が想定外です: type={type(container).__name__}, url={url}")
 
-    # タイトルが取得できない場合はURLをタイトルとして使用
-    if not title:
-        title = url
+    if "markdown" not in container:
+        raise ValueError(f"'markdown' キーが見つかりません。keys={list(container.keys())} url={url}")
+
+    markdown_content = container.get("markdown", "")
+    title = (container.get("metadata") or {}).get("title", "") or url
 
     return (title , markdown_content)
 
