@@ -154,30 +154,17 @@ def process_register_task(task):
         send_discord_message(channel_id, message)
 
     except Exception as e:
-        # 例外発生箇所のファイル名・行番号・種類・スタックトレースを付けて通知
+        # 例外発生箇所のファイル名と行番号を付けて通知
         try:
             import traceback
-            error_type = type(e).__name__
             tb = traceback.extract_tb(e.__traceback__)
             if tb:
-                filename, lineno, funcname, _ = tb[-1]
-                # トレースバック全文（Discordメッセージ上限対策で長い場合は末尾を切り出し）
-                stack_text = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
-                if len(stack_text) > 1800:
-                    stack_text = stack_text[-1800:]
-                error_message = (
-                    "❌ 処理中にエラーが発生しました\n"
-                    f"種類: {error_type}\n"
-                    f"場所: {filename}:{lineno} ({funcname})\n"
-                    f"詳細: {e}\n"
-                    f"```
-{stack_text}
-```"
-                )
+                filename, lineno, _, _ = tb[-1]
+                error_message = f"❌ 処理中にエラーが発生しました: {str(e)} (ファイル: {filename}, 行: {lineno})"
             else:
-                error_message = f"❌ 処理中にエラーが発生しました\n種類: {error_type}\n詳細: {e}"
-        except Exception:
-            error_message = f"❌ 処理中にエラーが発生しました: {e}"
+                error_message = f"❌ 処理中にエラーが発生しました: {str(e)}"
+        except Exception as _:
+            error_message = f"❌ 処理中にエラーが発生しました: {str(e)}"
         send_discord_message(channel_id, error_message)
 
 
