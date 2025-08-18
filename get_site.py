@@ -9,7 +9,7 @@ FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY")
 
 
 def fetch_and_convert_to_markdown(
-        url: str ,
+        url: str,
         cookie_file_path: str = "cookies.json"
 ):
     """
@@ -41,22 +41,31 @@ def fetch_and_convert_to_markdown(
             cookies = {"Cookie": cookie_str.strip()}
 
     # URLからコンテンツを取得（v1では params を使わず、引数で直接渡す）
-    response = app.scrape_url(
-        url,
-        formats=["markdown", "html"],
-        headers=cookies
-    )
+    try:
+        response = app.scrape_url(
+            url,
+            formats=["markdown", "html"],
+            headers=cookies
+        )
+    except Exception as e:
+        # Firecrawl 呼び出しで例外が出た場合でも常にタプルを返す
+        print(f"Firecrawl scrape エラー: {e}")
+        return (url or "", "")
 
     # レスポンスからマークダウンとメタデータを取得
-    if response and "markdown" in response:
-        markdown_content = response.get("markdown" , "")
-        title = response["metadata"].get("title" , "")
+    if response and isinstance(response, dict) and "markdown" in response:
+        markdown_content = response.get("markdown", "")
+        metadata = response.get("metadata", {}) or {}
+        title = metadata.get("title", "")
 
         # タイトルが取得できない場合はURLをタイトルとして使用
         if not title:
             title = url
 
-        return (title , markdown_content)
+        return (title, markdown_content)
+
+    # 期待するフィールドが無い場合も常にタプルを返す
+    return (url or "", "")
 
 
 if __name__ == "__main__":
