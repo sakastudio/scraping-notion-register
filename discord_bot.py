@@ -90,7 +90,7 @@ def process_register_task(task):
     channel_id = task['channel_id']
     url = task['url']
     tags = task.get('tags')  # タグは省略可能
-    
+
     try:
         # 処理状況のメッセージ
         status_msg = f"サイトのコンテンツを取得しています..."
@@ -100,29 +100,29 @@ def process_register_task(task):
         if not content:
             send_discord_message(channel_id, f"❌ コンテンツの取得に失敗しました: {url}")
             return
-            
+
         # タイトルの翻訳（英語など日本語以外の場合）
         original_title = title
         translated_title = None
-        
+
         if is_non_japanese_title(title):
             status_msg = f"タイトルを翻訳しています..."
             send_discord_message(channel_id, status_msg)
-            
+
             translated_title = translate_title(title)
             if translated_title:
                 title = f"{translated_title} (原題: {original_title})"
-                
+
         # 処理状況の更新
         status_msg = f"Notionテーブルに登録しています..."
         send_discord_message(channel_id, status_msg)
-        
+
         # Notionテーブルに登録
         page = register_notion_table(content, url=url, title=title, tags=tags)
-        
+
         # 完了メッセージを送信
         page_url = page.get("url", "不明")
-        
+
         # タグ情報を取得
         try:
             # 登録されたタグの取得を試みる（存在すれば）
@@ -131,7 +131,7 @@ def process_register_task(task):
                 for tag_obj in page["properties"]["タグ"]["multi_select"]:
                     if "name" in tag_obj:
                         registered_tags.append(tag_obj["name"])
-            
+
             if registered_tags:
                 tag_info = f"タグ: {', '.join(registered_tags)}"
             else:
@@ -142,20 +142,31 @@ def process_register_task(task):
                 tag_info = f"タグ: {', '.join(tags)}"
             else:
                 tag_info = "タグ: 自動予測（詳細不明）"
-            
+
         # 翻訳情報を表示用に整形
         title_info = title
         if translated_title:  # 翻訳された場合
             title_info = f"**タイトル:** {translated_title}\n**原題:** {original_title}"
         else:
             title_info = f"**タイトル:** {title}"
-        
+
         message = f"✅ URLの登録が完了しました!\n{title_info}\n**元URL:** {url}\n**Notion URL:** {page_url}\n**{tag_info}**"
         send_discord_message(channel_id, message)
-            
+
     except Exception as e:
-        error_message = f"❌ 処理中にエラーが発生しました: {str(e)}"
+        # 例外発生箇所のファイル名と行番号を付けて通知
+        try:
+            import traceback
+            tb = traceback.extract_tb(e.__traceback__)
+            if tb:
+                filename, lineno, _, _ = tb[-1]
+                error_message = f"❌ 処理中にエラーが発生しました: {str(e)} (ファイル: {filename}, 行: {lineno})"
+            else:
+                error_message = f"❌ 処理中にエラーが発生しました: {str(e)}"
+        except Exception as _:
+            error_message = f"❌ 処理中にエラーが発生しました: {str(e)}"
         send_discord_message(channel_id, error_message)
+
 
 # バックグラウンド処理用のスレッド関数
 def process_task_queue():
