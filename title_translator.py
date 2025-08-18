@@ -35,7 +35,7 @@ def translate_title(title: str, source_lang: str = "en", target_lang: str = "ja"
     
     try:
         response = client.chat.completions.create(
-            model="gpt-5-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": f"あなたは優秀な{source_lang}から{target_lang}への翻訳者です。与えられたテキストを適切に翻訳してください。翻訳のみを返し、余計な説明は不要です。"},
                 {"role": "user", "content": f"以下のタイトルを翻訳してください：\n{title}"}
