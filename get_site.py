@@ -40,14 +40,12 @@ def fetch_and_convert_to_markdown(
         if cookie_str:
             cookies = {"Cookie": cookie_str.strip()}
 
-    # Firecrawlのパラメータを設定
-    params = {
-        "formats": ["markdown" , "html"] ,
-        "headers": cookies  # headersに直接クッキー情報を渡す
-    }
-
-    # URLからコンテンツを取得
-    response = app.scrape_url(url , params=params)
+    # URLからコンテンツを取得（v1では params を使わず、引数で直接渡す）
+    response = app.scrape_url(
+        url,
+        formats=["markdown", "html"],
+        headers=cookies
+    )
 
     # レスポンスからマークダウンとメタデータを取得
     if response and "markdown" in response:
