@@ -105,7 +105,30 @@ def fetch_and_convert_to_markdown(
         raise ValueError(f"'markdown' キーが見つかりません。keys={list(container.keys())} url={url}")
 
     markdown_content = container.get("markdown", "")
-    title = (container.get("metadata") or {}).get("title", "") or url
+    
+    # メタデータからタイトルを確実に取得
+    metadata = container.get("metadata")
+    title = ""
+    
+    if metadata and isinstance(metadata, dict):
+        # 複数のタイトルフィールドを優先順位付きで確認
+        title_candidates = [
+            metadata.get("title"),
+            metadata.get("ogTitle"),
+            metadata.get("twitterTitle"),
+            metadata.get("pageTitle"),
+            metadata.get("dcTitle")
+        ]
+        
+        # 最初の有効なタイトルを選択（空文字列でないもの）
+        for candidate in title_candidates:
+            if candidate and isinstance(candidate, str) and candidate.strip():
+                title = candidate.strip()
+                break
+    
+    # タイトルが取得できなかった場合はURLをフォールバックとして使用
+    if not title:
+        title = url
 
     return (title , markdown_content)
 
