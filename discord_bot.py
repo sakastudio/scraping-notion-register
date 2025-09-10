@@ -8,6 +8,8 @@ from io import BytesIO
 
 from keep_alive import keep_alive
 from get_site import fetch_and_convert_to_markdown
+from get_youtube import fetch_youtube_info, extract_video_id
+from article_generator import process_youtube_for_notion
 from notion_table import register_notion_table
 from title_translator import is_non_japanese_title, translate_title
 
@@ -16,6 +18,17 @@ WATCH_CHANNEL_IDS = ["1350334310452039680"]
 
 # URLの正規表現パターン
 URL_PATTERN = r'https?://[^\s)"]+'
+
+# YouTube URLの判定関数
+def is_youtube_url(url: str) -> bool:
+    """YouTube URLかどうかを判定"""
+    youtube_domains = [
+        'youtube.com',
+        'youtu.be',
+        'www.youtube.com',
+        'm.youtube.com'
+    ]
+    return any(domain in url.lower() for domain in youtube_domains)
 
 # 処理キュー
 task_queue = queue.Queue()
@@ -92,11 +105,36 @@ def process_register_task(task):
     tags = task.get('tags')  # タグは省略可能
 
     try:
-        # 処理状況のメッセージ
-        status_msg = f"サイトのコンテンツを取得しています..."
-        send_discord_message(channel_id, status_msg)
-        # サイトのタイトルとコンテンツを取得
-        title, content = fetch_and_convert_to_markdown(url)
+        # YouTube URLかどうかチェック
+        if is_youtube_url(url):
+            # YouTube動画の処理
+            status_msg = f"YouTube動画の情報を取得しています..."
+            send_discord_message(channel_id, status_msg)
+            
+            # 動画情報と字幕を取得
+            title, description, transcript, metadata = fetch_youtube_info(url)
+            if not title:
+                send_discord_message(channel_id, f"❌ YouTube動画の情報取得に失敗しました: {url}")
+                return
+            
+            # 字幕から記事を生成
+            status_msg = f"字幕から記事を生成しています..."
+            send_discord_message(channel_id, status_msg)
+            
+            # 記事生成と字幕の結合
+            content = process_youtube_for_notion(
+                title=title,
+                description=description,
+                transcript=transcript,
+                url=url,
+                metadata=metadata
+            )
+        else:
+            # 通常のWebページの処理
+            status_msg = f"サイトのコンテンツを取得しています..."
+            send_discord_message(channel_id, status_msg)
+            # サイトのタイトルとコンテンツを取得
+            title, content = fetch_and_convert_to_markdown(url)
         if not content:
             send_discord_message(channel_id, f"❌ コンテンツの取得に失敗しました: {url}")
             return
