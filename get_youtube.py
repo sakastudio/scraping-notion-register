@@ -82,23 +82,18 @@ def parse_srt_subtitle(srt_content: str) -> str:
 
 def download_and_parse_subtitle(subtitle_url: str, format_type: str = 'vtt') -> Optional[str]:
     """字幕URLからテキストをダウンロードしてパース"""
-    try:
-        response = requests.get(subtitle_url, timeout=10)
-        response.raise_for_status()
-        content = response.text
-        
-        # フォーマットに応じてパース
-        if format_type == 'vtt' or 'vtt' in subtitle_url:
-            return parse_vtt_subtitle(content)
-        elif format_type == 'srt':
-            return parse_srt_subtitle(content)
-        else:
-            # その他のフォーマットは生テキストとして返す
-            return content
-            
-    except Exception as e:
-        print(f"字幕のダウンロード/パースエラー: {e}")
-        return None
+    response = requests.get(subtitle_url, timeout=10)
+    response.raise_for_status()
+    content = response.text
+
+    # フォーマットに応じてパース
+    if format_type == 'vtt' or 'vtt' in subtitle_url:
+        return parse_vtt_subtitle(content)
+    elif format_type == 'srt':
+        return parse_srt_subtitle(content)
+    else:
+        # その他のフォーマットは生テキストとして返す
+        return content
 
 def get_best_subtitle(subtitles_dict: Dict, preferred_langs: List[str] = ['ja', 'en']) -> Optional[Tuple[str, Dict]]:
     """利用可能な字幕から最適なものを選択"""
