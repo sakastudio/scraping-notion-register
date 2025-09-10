@@ -143,13 +143,16 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") 
     
     # yt-dlpのオプション設定
     ydl_opts = {
-        'quiet': False,  # デバッグのため一時的にFalse
-        'no_warnings': False,
+        'quiet': True,
+        'no_warnings': True,
         'skip_download': True,
+        'extract_flat': False,
+        'force_generic_extractor': False,
         # 字幕関連のオプション
         'writesubtitles': True,  # 手動字幕を取得
         'writeautomaticsub': True,  # 自動生成字幕を取得
         'subtitleslangs': ['ja', 'en'],  # 優先言語
+        'extractor_args': {'youtube': {'skip': ['dash', 'hls']}},  # DASHとHLSをスキップ
     }
     
     # cookiesファイルが存在する場合は使用
@@ -164,19 +167,48 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") 
     metadata = {}
     transcript = None
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # 動画情報を取得
-            info = ydl.extract_info(url, download=False)
-    except yt_dlp.utils.DownloadError as e:
-        # フォーマットエラーの場合は、フォーマット指定なしで再試行
-        if "Requested format is not available" in str(e):
-            print("フォーマットエラーを回避して再試行...")
-            ydl_opts['format'] = None  # フォーマット指定を削除
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-        else:
-            raise
+    info = None
+    
+    # 複数の設定パターンを試行
+    format_options = [
+        {'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'},  # 最適な組み合わせ
+        {'format': 'best'},  # ベストシングルフォーマット
+        {'format': 'worst'},  # 最低品質（エラー回避用）
+        {},  # デフォルト設定（フォーマット指定なし）
+    ]
+    
+    for format_opt in format_options:
+        try:
+            current_opts = ydl_opts.copy()
+            current_opts.update(format_opt)
+            
+            with yt_dlp.YoutubeDL(current_opts) as ydl:
+                # 動画情報を取得（ダウンロードはしない、処理もスキップ）
+                info = ydl.extract_info(url, download=False, process=False)
+                # 処理が必要な場合
+                if info and not info.get('title'):
+                    info = ydl.process_ie_result(info, download=False)
+                break  # 成功したらループを抜ける
+                
+        except yt_dlp.utils.DownloadError as e:
+            error_msg = str(e)
+            if "Requested format is not available" in error_msg:
+                continue  # 次のフォーマットオプションを試す
+            elif "Sign in to confirm your age" in error_msg:
+                print("年齢制限のある動画です")
+                raise ValueError(f"年齢制限のある動画にはアクセスできません: {url}")
+            elif "Video unavailable" in error_msg:
+                raise ValueError(f"動画が利用できません: {url}")
+            else:
+                # その他のエラーは最後に試行した後に再発生させる
+                if format_opt == format_options[-1]:
+                    raise
+        except Exception as e:
+            if format_opt == format_options[-1]:
+                raise
+    
+    if not info:
+        raise ValueError(f"動画情報の取得に失敗しました: {url}")
 
     # 基本情報を取得
     title = info.get('title', '')
@@ -325,6 +357,8 @@ if __name__ == "__main__":
             else:
                 print("❌ 動画情報の取得に失敗しました")
                 
+        except ValueError as e:
+            print(f"⚠️ {e}")
         except Exception as e:
             print(f"❌ エラー: {e}")
             import traceback
