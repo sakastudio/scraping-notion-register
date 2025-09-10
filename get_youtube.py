@@ -143,8 +143,6 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt", 
         'skip_download': True,
         'extract_flat': False,
         'force_generic_extractor': False,
-        # IPv6を強制使用
-        'source_address': '::',  # --force-ipv6 相当の設定
         # 字幕関連のオプション
         'writesubtitles': True,  # 手動字幕を取得
         'writeautomaticsub': True,  # 自動生成字幕を取得
