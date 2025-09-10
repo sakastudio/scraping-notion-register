@@ -126,9 +126,13 @@ def get_best_subtitle(subtitles_dict: Dict, preferred_langs: List[str] = ['ja', 
     
     return None
 
-def fetch_youtube_info(url: str) -> Tuple[Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
+def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") -> Tuple[Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
     """
     YouTube動画の情報と字幕を取得（yt-dlpのみ使用）
+    
+    引数:
+        url: YouTube動画のURL
+        cookies_file: YouTube認証用のcookiesファイルパス
     
     戻り値:
         tuple: (タイトル, 説明文, 字幕テキスト, メタデータ辞書)
@@ -139,81 +143,97 @@ def fetch_youtube_info(url: str) -> Tuple[Optional[str], Optional[str], Optional
     
     # yt-dlpのオプション設定
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': False,  # デバッグのため一時的にFalse
+        'no_warnings': False,
         'skip_download': True,
         # 字幕関連のオプション
         'writesubtitles': True,  # 手動字幕を取得
         'writeautomaticsub': True,  # 自動生成字幕を取得
-        'subtitleslangs': ['ja', 'en', 'all'],  # 優先言語
-        'subtitlesformat': 'vtt/srt/best',  # 字幕フォーマット優先順位
+        'subtitleslangs': ['ja', 'en'],  # 優先言語
     }
+    
+    # cookiesファイルが存在する場合は使用
+    import os
+    if os.path.exists(cookies_file):
+        ydl_opts['cookiesfrombrowser'] = None  # ブラウザのcookieを使わない
+        ydl_opts['cookiefile'] = cookies_file
+        print(f"Cookieファイルを使用: {cookies_file}")
     
     title = None
     description = None
     metadata = {}
     transcript = None
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        # 動画情報を取得
-        info = ydl.extract_info(url, download=False)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # 動画情報を取得
+            info = ydl.extract_info(url, download=False)
+    except yt_dlp.utils.DownloadError as e:
+        # フォーマットエラーの場合は、フォーマット指定なしで再試行
+        if "Requested format is not available" in str(e):
+            print("フォーマットエラーを回避して再試行...")
+            ydl_opts['format'] = None  # フォーマット指定を削除
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+        else:
+            raise
 
-        # 基本情報を取得
-        title = info.get('title', '')
-        description = info.get('description', '')
+    # 基本情報を取得
+    title = info.get('title', '')
+    description = info.get('description', '')
 
-        # メタデータを収集
-        metadata = {
-            'channel': info.get('uploader', ''),
-            'channel_id': info.get('channel_id', ''),
-            'duration': info.get('duration', 0),
-            'view_count': info.get('view_count', 0),
-            'like_count': info.get('like_count', 0),
-            'upload_date': info.get('upload_date', ''),
-            'tags': info.get('tags', []),
-            'categories': info.get('categories', []),
-            'thumbnail': info.get('thumbnail', ''),
-            'video_id': video_id,
-            'url': url
-        }
+    # メタデータを収集
+    metadata = {
+        'channel': info.get('uploader', ''),
+        'channel_id': info.get('channel_id', ''),
+        'duration': info.get('duration', 0),
+        'view_count': info.get('view_count', 0),
+        'like_count': info.get('like_count', 0),
+        'upload_date': info.get('upload_date', ''),
+        'tags': info.get('tags', []),
+        'categories': info.get('categories', []),
+        'thumbnail': info.get('thumbnail', ''),
+        'video_id': video_id,
+        'url': url
+    }
 
-        # 字幕を取得
-        print(f"利用可能な字幕を確認中...")
+    # 字幕を取得
+    print(f"利用可能な字幕を確認中...")
 
-        # 手動字幕を優先的に取得
-        subtitles = info.get('subtitles', {})
-        subtitle_info = None
-        subtitle_lang = None
+    # 手動字幕を優先的に取得
+    subtitles = info.get('subtitles', {})
+    subtitle_info = None
+    subtitle_lang = None
 
-        if subtitles:
-            print(f"手動字幕が利用可能: {list(subtitles.keys())}")
-            result = get_best_subtitle(subtitles, ['ja', 'en'])
+    if subtitles:
+        print(f"手動字幕が利用可能: {list(subtitles.keys())}")
+        result = get_best_subtitle(subtitles, ['ja', 'en'])
+        if result:
+            subtitle_lang, subtitle_info = result
+
+    # 手動字幕がない場合は自動生成字幕を取得
+    if not subtitle_info:
+        auto_captions = info.get('automatic_captions', {})
+        if auto_captions:
+            print(f"自動生成字幕が利用可能: {list(auto_captions.keys())}")
+            result = get_best_subtitle(auto_captions, ['ja', 'en'])
             if result:
                 subtitle_lang, subtitle_info = result
 
-        # 手動字幕がない場合は自動生成字幕を取得
-        if not subtitle_info:
-            auto_captions = info.get('automatic_captions', {})
-            if auto_captions:
-                print(f"自動生成字幕が利用可能: {list(auto_captions.keys())}")
-                result = get_best_subtitle(auto_captions, ['ja', 'en'])
-                if result:
-                    subtitle_lang, subtitle_info = result
+    # 字幕をダウンロードしてパース
+    if subtitle_info and 'url' in subtitle_info:
+        print(f"字幕をダウンロード中... (言語: {subtitle_lang}, 形式: {subtitle_info.get('ext', 'unknown')})")
+        transcript = download_and_parse_subtitle(
+            subtitle_info['url'],
+            subtitle_info.get('ext', 'vtt')
+        )
 
-        # 字幕をダウンロードしてパース
-        if subtitle_info and 'url' in subtitle_info:
-            print(f"字幕をダウンロード中... (言語: {subtitle_lang}, 形式: {subtitle_info.get('ext', 'unknown')})")
-            transcript = download_and_parse_subtitle(
-                subtitle_info['url'],
-                subtitle_info.get('ext', 'vtt')
-            )
-
-            if transcript:
-                print(f"字幕の取得に成功しました（{len(transcript)}文字）")
-            else:
-                print("字幕のパースに失敗しました")
+        if transcript:
+            print(f"字幕の取得に成功しました（{len(transcript)}文字）")
         else:
-            print("利用可能な字幕が見つかりませんでした")
+            print("字幕のパースに失敗しました")
+    else:
+        print("利用可能な字幕が見つかりませんでした")
 
 
     return title, description, transcript, metadata
