@@ -126,7 +126,7 @@ def get_best_subtitle(subtitles_dict: Dict, preferred_langs: List[str] = ['ja', 
     
     return None
 
-def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") -> Tuple[Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
+def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt", send_message_func=None) -> Tuple[Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
     """
     YouTube動画の情報と字幕を取得（yt-dlpのみ使用）
     
@@ -155,12 +155,19 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") 
         'extractor_args': {'youtube': {'skip': ['dash', 'hls']}},  # DASHとHLSをスキップ
     }
     
+    # メッセージ送信関数のヘルパー
+    def log_message(msg):
+        if send_message_func:
+            send_message_func(msg)
+        else:
+            print(msg)
+    
     # cookiesファイルが存在する場合は使用
     import os
     if os.path.exists(cookies_file):
         ydl_opts['cookiesfrombrowser'] = None  # ブラウザのcookieを使わない
         ydl_opts['cookiefile'] = cookies_file
-        print(f"Cookieファイルを使用: {cookies_file}")
+        log_message(f"Cookieファイルを使用: {cookies_file}")
     
     title = None
     description = None
@@ -195,7 +202,7 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") 
             if "Requested format is not available" in error_msg:
                 continue  # 次のフォーマットオプションを試す
             elif "Sign in to confirm your age" in error_msg:
-                print("年齢制限のある動画です")
+                log_message("年齢制限のある動画です")
                 raise ValueError(f"年齢制限のある動画にはアクセスできません: {url}")
             elif "Video unavailable" in error_msg:
                 raise ValueError(f"動画が利用できません: {url}")
@@ -230,7 +237,7 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") 
     }
 
     # 字幕を取得
-    print(f"利用可能な字幕を確認中...")
+    log_message(f"利用可能な字幕を確認中...")
 
     # 手動字幕を優先的に取得
     subtitles = info.get('subtitles', {})
@@ -238,7 +245,7 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") 
     subtitle_lang = None
 
     if subtitles:
-        print(f"手動字幕が利用可能: {list(subtitles.keys())}")
+        log_message(f"手動字幕が利用可能: {list(subtitles.keys())}")
         result = get_best_subtitle(subtitles, ['ja', 'en'])
         if result:
             subtitle_lang, subtitle_info = result
@@ -247,25 +254,25 @@ def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt") 
     if not subtitle_info:
         auto_captions = info.get('automatic_captions', {})
         if auto_captions:
-            print(f"自動生成字幕が利用可能: {list(auto_captions.keys())}")
+            log_message(f"自動生成字幕が利用可能: {list(auto_captions.keys())}")
             result = get_best_subtitle(auto_captions, ['ja', 'en'])
             if result:
                 subtitle_lang, subtitle_info = result
 
     # 字幕をダウンロードしてパース
     if subtitle_info and 'url' in subtitle_info:
-        print(f"字幕をダウンロード中... (言語: {subtitle_lang}, 形式: {subtitle_info.get('ext', 'unknown')})")
+        log_message(f"字幕をダウンロード中... (言語: {subtitle_lang}, 形式: {subtitle_info.get('ext', 'unknown')})")
         transcript = download_and_parse_subtitle(
             subtitle_info['url'],
             subtitle_info.get('ext', 'vtt')
         )
 
         if transcript:
-            print(f"字幕の取得に成功しました（{len(transcript)}文字）")
+            log_message(f"字幕の取得に成功しました（{len(transcript)}文字）")
         else:
-            print("字幕のパースに失敗しました")
+            log_message("字幕のパースに失敗しました")
     else:
-        print("利用可能な字幕が見つかりませんでした")
+        log_message("利用可能な字幕が見つかりませんでした")
 
 
     return title, description, transcript, metadata

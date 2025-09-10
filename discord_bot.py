@@ -111,8 +111,14 @@ def process_register_task(task):
             status_msg = f"YouTube動画の情報を取得しています..."
             send_discord_message(channel_id, status_msg)
             
-            # 動画情報と字幕を取得
-            title, description, transcript, metadata = fetch_youtube_info(url)
+            # 動画情報と字幕を取得（Discord送信関数を渡す）
+            def youtube_log_sender(msg):
+                send_discord_message(channel_id, f"🔍 {msg}")
+            
+            title, description, transcript, metadata = fetch_youtube_info(
+                url, 
+                send_message_func=youtube_log_sender
+            )
             if not title:
                 send_discord_message(channel_id, f"❌ YouTube動画の情報取得に失敗しました: {url}")
                 return
