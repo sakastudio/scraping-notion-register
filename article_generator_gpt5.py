@@ -11,19 +11,17 @@ def generate_article_with_gpt5(
     title: str, 
     description: Optional[str] = None,
     metadata: Optional[dict] = None,
-    reasoning_effort: str = "high",  # minimal, low, medium, high
-    verbosity: str = "high"  # low, medium, high
+    model: str = "gpt-5-mini"  # gpt-5, gpt-5-mini, gpt-5-nano
 ) -> Optional[str]:
     """
-    GPT-5 (Responses API)を使用してYouTube動画の字幕から構造化された記事を生成
+    GPT-5を使用してYouTube動画の字幕から構造化された記事を生成
     
     Args:
         transcript: 字幕テキスト
         title: 動画タイトル
         description: 動画の説明文（オプション）
         metadata: 動画のメタデータ（チャンネル名、タグなど）
-        reasoning_effort: 推論の深さ（minimal/low/medium/high）
-        verbosity: 回答の詳細度（low/medium/high）
+        model: 使用するGPT-5モデル（gpt-5/gpt-5-mini/gpt-5-nano）
     
     Returns:
         生成された記事テキスト
@@ -114,28 +112,18 @@ def generate_article_with_gpt5(
 
     try:
         # GPT-5で記事生成（Chat Completions API）
-        # GPT-5の3つのモデル: gpt-5（フル）、gpt-5-mini（高速）、gpt-5-nano（最軽量）
-        model_name = "gpt-5-mini"  # コスト効率の良いminiモデルを使用
+        print(f"GPT-5 ({model})を使用して記事を生成中...")
         
-        print(f"GPT-5 ({model_name})を使用して記事を生成中...")
-        
-        # GPT-5のAPIパラメータを設定
-        api_params = {
-            "model": model_name,
-            "messages": [
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            "max_completion_tokens": 8000,  # GPT-5は最大128,000トークンまで対応
-        }
-        
-        # GPT-5特有のパラメータを追加（エラーにならないように条件付きで）
-        # reasoning_effortとverbosityはまだサポートされていない可能性があるため
-        # エラーハンドリングで対応
-        
-        response = client.chat.completions.create(**api_params)
+            max_completion_tokens=8000  # GPT-5は最大128,000トークンまで対応
+        )
         
         article = response.choices[0].message.content
         
@@ -148,70 +136,12 @@ def generate_article_with_gpt5(
             if hasattr(usage, 'reasoning_tokens'):
                 print(f"推論トークン: {usage.reasoning_tokens}")
         
-        print(f"GPT-5 ({model_name})での生成が完了しました")
+        print(f"GPT-5 ({model})での生成が完了しました")
         return article
         
     except Exception as e:
-        error_msg = str(e)
-        
-        # GPT-5が利用できない場合のフォールバック処理
-        if "model" in error_msg.lower() or "not found" in error_msg.lower() or "invalid" in error_msg.lower():
-            print(f"GPT-5が利用できません: {error_msg}")
-            print("o1-miniにフォールバックします...")
-            
-            try:
-                # o1-miniで再試行（フォールバック）
-                response = client.chat.completions.create(
-                    model="o1-mini",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    max_completion_tokens=4000
-                )
-                
-                article = response.choices[0].message.content
-                
-                if hasattr(response, 'usage'):
-                    usage = response.usage
-                    print(f"トークン使用量 - 入力: {usage.prompt_tokens}, 出力: {usage.completion_tokens}, 合計: {usage.total_tokens}")
-                
-                print("o1-miniでの生成が完了しました（フォールバック）")
-                return article
-                
-            except Exception as fallback_error:
-                print(f"o1-miniも失敗しました: {fallback_error}")
-                print("GPT-4o-miniを試します...")
-                
-                # 最終的にGPT-4o-miniを試す
-                try:
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "あなたは優秀なテクニカルライターです。YouTube動画の内容を分かりやすく、実践的な記事にまとめることが得意です。"
-                            },
-                            {
-                                "role": "user",
-                                "content": prompt
-                            }
-                        ],
-                        max_tokens=3000,
-                        temperature=0.7
-                    )
-                    
-                    article = response.choices[0].message.content
-                    print("GPT-4o-miniでの生成が完了しました（最終フォールバック）")
-                    return article
-                except Exception as final_error:
-                    print(f"すべてのモデルで失敗しました: {final_error}")
-                    return None
-        else:
-            print(f"記事生成中にエラーが発生しました: {e}")
-            return None
+        print(f"記事生成中にエラーが発生しました: {e}")
+        return None
 
 def combine_article_and_transcript_gpt5(
     article: Optional[str], 
@@ -281,7 +211,7 @@ def process_youtube_for_notion_gpt5(
     transcript: Optional[str],
     url: str,
     metadata: Optional[dict] = None,
-    use_advanced_reasoning: bool = True
+    model: str = "gpt-5-mini"
 ) -> str:
     """
     YouTube動画情報を処理してNotion登録用コンテンツを生成（GPT-5使用）
@@ -292,19 +222,11 @@ def process_youtube_for_notion_gpt5(
         transcript: 字幕テキスト
         url: YouTube URL
         metadata: メタデータ
-        use_advanced_reasoning: 高度な推論を使用するか（True: high, False: low）
+        model: 使用するGPT-5モデル（gpt-5/gpt-5-mini/gpt-5-nano）
     
     Returns:
         Notion登録用のコンテンツ
     """
-    
-    # 推論レベルの設定
-    if use_advanced_reasoning:
-        reasoning_effort = "high"  # 深い分析（コーディングや複雑なタスクに最適）
-        verbosity = "high"  # 詳細な記事
-    else:
-        reasoning_effort = "minimal"  # 最速処理
-        verbosity = "medium"  # 標準的な長さ
     
     # 字幕から記事を生成
     article = None
@@ -315,8 +237,7 @@ def process_youtube_for_notion_gpt5(
             title=title,
             description=description,
             metadata=metadata,
-            reasoning_effort=reasoning_effort,
-            verbosity=verbosity
+            model=model
         )
         
         if article:
@@ -330,8 +251,7 @@ def process_youtube_for_notion_gpt5(
             title=title,
             description=None,
             metadata=metadata,
-            reasoning_effort="low",  # 説明文の場合は軽い処理
-            verbosity="medium"
+            model=model
         )
     
     # 記事と字幕を組み合わせてNotion用コンテンツを作成
@@ -377,7 +297,7 @@ if __name__ == "__main__":
         transcript=test_transcript,
         url="https://youtube.com/watch?v=example",
         metadata=test_metadata,
-        use_advanced_reasoning=True  # 高度な推論を使用
+        model="gpt-5-mini"  # GPT-5-miniモデルを使用
     )
     
     # 結果を保存
