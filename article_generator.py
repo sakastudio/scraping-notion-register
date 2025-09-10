@@ -5,6 +5,22 @@ from typing import Optional
 # OpenAI APIクライアントの初期化
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+# GPT-5モデル対応の記事生成モジュールをインポート
+try:
+    from article_generator_gpt5 import process_youtube_for_notion_gpt5
+    GPT5_MODEL_AVAILABLE = True
+except ImportError:
+    GPT5_MODEL_AVAILABLE = False
+    print("GPT-5モジュールが利用できません。")
+
+# o1モデル対応の記事生成モジュールをインポート
+try:
+    from article_generator_o1 import process_youtube_for_notion_o1
+    O1_MODEL_AVAILABLE = True
+except ImportError:
+    O1_MODEL_AVAILABLE = False
+    print("o1モデル用モジュールが利用できません。通常のGPT-4を使用します。")
+
 def generate_article_from_transcript(
     transcript: str, 
     title: str, 
@@ -173,7 +189,8 @@ def process_youtube_for_notion(
     description: Optional[str],
     transcript: Optional[str],
     url: str,
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = None,
+    use_best_model: bool = True  # 最良のモデルを使用
 ) -> str:
     """
     YouTube動画情報を処理してNotion登録用コンテンツを生成
@@ -184,6 +201,39 @@ def process_youtube_for_notion(
     3. Notion登録用の形式で返す
     """
     
+    # GPT-5モデルが利用可能な場合（最優先）
+    if use_best_model and GPT5_MODEL_AVAILABLE:
+        print("GPT-5を使用して記事を生成します...")
+        try:
+            return process_youtube_for_notion_gpt5(
+                title=title,
+                description=description,
+                transcript=transcript,
+                url=url,
+                metadata=metadata,
+                use_advanced_reasoning=True  # 深い分析を使用
+            )
+        except Exception as e:
+            print(f"GPT-5でエラーが発生しました: {e}")
+            print("o1モデルにフォールバックします...")
+    
+    # o1モデルが利用可能で、使用が指定されている場合
+    if use_best_model and O1_MODEL_AVAILABLE:
+        print("o1モデル（o1-mini）を使用して記事を生成します...")
+        try:
+            return process_youtube_for_notion_o1(
+                title=title,
+                description=description,
+                transcript=transcript,
+                url=url,
+                metadata=metadata,
+                use_advanced_reasoning=True  # 深い分析を使用
+            )
+        except Exception as e:
+            print(f"o1モデルでエラーが発生しました: {e}")
+            print("通常のGPT-4モデルにフォールバックします...")
+    
+    # 通常のGPT-4モデルを使用
     # 字幕から記事を生成
     article = None
     if transcript and len(transcript) > 100:  # 字幕が十分にある場合
