@@ -5,36 +5,23 @@ from typing import Optional
 # OpenAI APIクライアントの初期化
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# GPT-5モデル対応の記事生成モジュールをインポート
-try:
-    from article_generator_gpt5 import process_youtube_for_notion_gpt5
-    GPT5_MODEL_AVAILABLE = True
-except ImportError:
-    GPT5_MODEL_AVAILABLE = False
-    print("GPT-5モジュールが利用できません。")
 
-# o1モデル対応の記事生成モジュールをインポート
-try:
-    from article_generator_o1 import process_youtube_for_notion_o1
-    O1_MODEL_AVAILABLE = True
-except ImportError:
-    O1_MODEL_AVAILABLE = False
-    print("o1モデル用モジュールが利用できません。通常のGPT-4を使用します。")
-
-def generate_article_from_transcript(
+def generate_article_with_gpt5(
     transcript: str, 
     title: str, 
     description: Optional[str] = None,
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = None,
+    model: str = "gpt-5"  # gpt-5, gpt-5-mini, gpt-5-nano
 ) -> Optional[str]:
     """
-    YouTube動画の字幕から構造化された記事を生成
+    GPT-5を使用してYouTube動画の字幕から構造化された記事を生成
     
     Args:
         transcript: 字幕テキスト
         title: 動画タイトル
         description: 動画の説明文（オプション）
         metadata: 動画のメタデータ（チャンネル名、タグなど）
+        model: 使用するGPT-5モデル（gpt-5/gpt-5-mini/gpt-5-nano）
     
     Returns:
         生成された記事テキスト
@@ -54,24 +41,34 @@ def generate_article_from_transcript(
             context_parts.append(f"チャンネル: {metadata['channel']}")
         if metadata.get('tags'):
             context_parts.append(f"タグ: {', '.join(metadata['tags'][:5])}")
+        if metadata.get('duration'):
+            duration = metadata['duration']
+            hours = duration // 3600
+            minutes = (duration % 3600) // 60
+            if hours > 0:
+                context_parts.append(f"動画の長さ: {hours}時間{minutes}分")
+            else:
+                context_parts.append(f"動画の長さ: {minutes}分")
     
     context = "\n".join(context_parts)
     
-    # 字幕が長すぎる場合は制限
-    max_transcript_length = 10000
+    # 字幕が長すぎる場合は制限（GPT-5は大容量入力に対応）
+    max_transcript_length = 80000  # GPT-5は大容量入力に対応
     if len(transcript) > max_transcript_length:
         transcript = transcript[:max_transcript_length] + "...[以下省略]"
     
-    # プロンプトの構築
+    # プロンプトの構築（GPT-5向けに最適化）
     prompt = f"""以下のYouTube動画の字幕から、読みやすく構造化された記事を作成してください。
+この記事はゲーム開発者やマーケターが読むことを想定しています。
 
 【要件】
-1. 動画の主要なポイントを整理して説明
-2. 適切な見出しとセクション分けを行う
-3. 重要な情報は箇条書きでまとめる
-4. ゲーム開発やマーケティングの観点から有用な洞察があれば追加
-5. 専門用語は必要に応じて簡潔に説明
-6. 記事は日本語で作成
+1. 動画の核心となるメッセージを明確に抽出
+2. 論理的な構造で情報を整理（導入→本論→結論）
+3. 重要な洞察やアクションアイテムを強調
+4. ゲーム開発・マーケティングの観点から実践的な価値を提供
+5. 専門用語は適切に説明し、初心者にも理解しやすく
+6. 具体例や数値データがあれば積極的に活用
+7. 記事は日本語で、プロフェッショナルなトーンで作成
 
 【動画情報】
 {context}
@@ -80,73 +77,113 @@ def generate_article_from_transcript(
 {transcript}
 
 【出力形式】
-Markdown形式で、以下の構造を参考に記事を作成してください：
+以下の構造でMarkdown形式の記事を作成してください：
 
-# [記事タイトル]
+# [魅力的で内容を的確に表すタイトル]
 
-## 概要
-[動画の内容を2-3文で要約]
+## 📌 エグゼクティブサマリー
+[3-5文で動画の要点を簡潔にまとめる]
 
-## 主要なポイント
-[重要な内容を箇条書きで]
+## 🎯 この記事で学べること
+[箇条書きで3-5個の主要な学習ポイント]
 
-## 詳細な内容
-[セクションごとに詳しく説明]
+## 📊 主要な内容
 
-## まとめ
-[全体のまとめと重要な takeaway]
+### [セクション1のタイトル]
+[内容を詳しく説明]
+
+### [セクション2のタイトル]
+[内容を詳しく説明]
+
+### [セクション3のタイトル]
+[内容を詳しく説明]
+
+## 💡 重要な洞察とポイント
+[動画から得られる重要な洞察を箇条書きで]
+
+## 🚀 実践への応用
+[この内容をどのように実践に活かせるか]
+
+## 📝 まとめ
+[全体のまとめと次のアクション]
 
 ---
 記事を作成してください："""
 
     try:
-        # OpenAI APIを呼び出し
+        # GPT-5で記事生成（Chat Completions API）
+        print(f"GPT-5 ({model})を使用して記事を生成中...")
+        
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=model,
             messages=[
-                {
-                    "role": "system",
-                    "content": "あなたは優秀なテクニカルライターです。YouTube動画の内容を分かりやすい記事にまとめることが得意です。"
-                },
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            max_tokens=2000,
-            temperature=0.7
+            max_completion_tokens=128000  # GPT-5は最大128,000トークンまで対応
         )
         
-        # 生成された記事を取得
         article = response.choices[0].message.content
         
+        # 使用情報の出力
+        if hasattr(response, 'usage'):
+            usage = response.usage
+            print(f"トークン使用量 - 入力: {usage.prompt_tokens}, 出力: {usage.completion_tokens}, 合計: {usage.total_tokens}")
+            
+            # GPT-5の推論トークンも表示（利用可能な場合）
+            if hasattr(usage, 'reasoning_tokens'):
+                print(f"推論トークン: {usage.reasoning_tokens}")
+        
+        print(f"GPT-5 ({model})での生成が完了しました")
         return article
         
     except Exception as e:
         print(f"記事生成中にエラーが発生しました: {e}")
         return None
 
-def combine_article_and_transcript(
-    article: Optional[str], 
-    transcript: Optional[str],
+def process_youtube_for_notion_gpt5(
     title: str,
+    description: Optional[str],
+    transcript: Optional[str],
     url: str,
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = None,
+    model: str = "gpt-5-mini"
 ) -> str:
     """
-    生成された記事と元の字幕を組み合わせてNotionに登録する形式にする
+    YouTube動画情報を処理してNotion登録用コンテンツを生成（GPT-5使用）
     
     Args:
-        article: 生成された記事
-        transcript: 元の字幕
         title: 動画タイトル
+        description: 動画説明文
+        transcript: 字幕テキスト
         url: YouTube URL
-        metadata: 動画のメタデータ
+        metadata: メタデータ
+        model: 使用するGPT-5モデル（gpt-5/gpt-5-mini/gpt-5-nano）
     
     Returns:
-        Notion登録用の完全なコンテンツ
+        Notion登録用のコンテンツ
     """
     
+    # 字幕から記事を生成
+    article = None
+    if transcript and len(transcript) > 100:  # 字幕が十分にある場合
+        print("GPT-5で字幕から記事を生成中...")
+        article = generate_article_with_gpt5(
+            transcript=transcript,
+            title=title,
+            description=description,
+            metadata=metadata,
+            model=model
+        )
+        
+        if article:
+            print("GPT-5での記事生成が完了しました")
+        else:
+            print("記事の生成に失敗しました")
+    
+    # 記事と字幕を組み合わせてNotion用コンテンツを作成
     content_parts = []
     
     # URLとメタデータ
@@ -164,20 +201,24 @@ def combine_article_and_transcript(
     # 生成された記事セクション
     if article:
         content_parts.append("---\n")
-        content_parts.append("# 📝 AIが生成した記事\n")
+        content_parts.append("# 🤖 AI分析記事（GPT-5生成）\n")
         content_parts.append(article)
         content_parts.append("\n---\n")
     
-    # 元の字幕セクション
+    # 元の字幕セクション（折りたたみ可能な形式で）
     if transcript:
         content_parts.append("# 📋 元の字幕（トランスクリプト）\n")
+        content_parts.append("<details>")
+        content_parts.append("<summary>クリックして字幕を表示</summary>\n")
         
         # 長い字幕は分割して表示
-        if len(transcript) > 15000:
-            content_parts.append(transcript[:15000])
+        if len(transcript) > 30000:
+            content_parts.append(transcript[:30000])
             content_parts.append("\n\n*[字幕が長いため、残りの部分は省略されています]*")
         else:
             content_parts.append(transcript)
+        
+        content_parts.append("\n</details>")
     elif not article:
         # 記事も字幕もない場合
         content_parts.append("*字幕の取得に失敗しました。動画の説明文のみが利用可能です。*")
@@ -201,73 +242,15 @@ def process_youtube_for_notion(
     3. Notion登録用の形式で返す
     """
     
-    # GPT-5モデルが利用可能な場合（最優先）
-    if use_best_model and GPT5_MODEL_AVAILABLE:
-        print("GPT-5を使用して記事を生成します...")
-        try:
-            return process_youtube_for_notion_gpt5(
-                title=title,
-                description=description,
-                transcript=transcript,
-                url=url,
-                metadata=metadata,
-                use_advanced_reasoning=True  # 深い分析を使用
-            )
-        except Exception as e:
-            print(f"GPT-5でエラーが発生しました: {e}")
-            print("o1モデルにフォールバックします...")
-    
-    # o1モデルが利用可能で、使用が指定されている場合
-    if use_best_model and O1_MODEL_AVAILABLE:
-        print("o1モデル（o1-mini）を使用して記事を生成します...")
-        try:
-            return process_youtube_for_notion_o1(
-                title=title,
-                description=description,
-                transcript=transcript,
-                url=url,
-                metadata=metadata,
-                use_advanced_reasoning=True  # 深い分析を使用
-            )
-        except Exception as e:
-            print(f"o1モデルでエラーが発生しました: {e}")
-            print("通常のGPT-4モデルにフォールバックします...")
-    
-    # 通常のGPT-4モデルを使用
-    # 字幕から記事を生成
-    article = None
-    if transcript and len(transcript) > 100:  # 字幕が十分にある場合
-        print("字幕から記事を生成中...")
-        article = generate_article_from_transcript(
-            transcript=transcript,
-            title=title,
-            description=description,
-            metadata=metadata
-        )
-        
-        if article:
-            print("記事の生成が完了しました")
-        else:
-            print("記事の生成に失敗しました")
-    elif description and len(description) > 200:  # 字幕がない場合は説明文から生成
-        print("説明文から記事を生成中...")
-        article = generate_article_from_transcript(
-            transcript=description,  # 説明文を字幕の代わりに使用
-            title=title,
-            description=None,
-            metadata=metadata
-        )
-    
-    # 記事と字幕を組み合わせてNotion用コンテンツを作成
-    content = combine_article_and_transcript(
-        article=article,
-        transcript=transcript,
+    return process_youtube_for_notion_gpt5(
         title=title,
+        description=description,
+        transcript=transcript,
         url=url,
-        metadata=metadata
+        metadata=metadata,
+        model="gpt-5"  # デフォルトでgpt-5-miniを使用
     )
-    
-    return content
+
 
 if __name__ == "__main__":
     # テスト用

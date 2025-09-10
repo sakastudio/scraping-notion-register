@@ -1,45 +1,104 @@
-# Repository Guidelines
+## プロジェクト概要
 
-This repository hosts a small Python toolchain and Discord bot that scrapes shared URLs, converts content to Markdown (Firecrawl), predicts tags (OpenAI), and registers entries into a Notion database.
+**scraping-notion-register**は、Discord Bot経由でWebサイトの記事を自動的にNotionデータベースに登録するシステムです。主にゲーム開発・マーケティング関連の記事を収集・整理するために設計されています。
 
-## Project Structure & Module Organization
-- `discord_bot.py`: Entry point. Watches channels, queues work, posts status.
-- `get_site.py`: Fetches a URL and returns `(title, markdown)`; writes to `downloaded/output.md` in its demo.
-- `notion_table.py`: Creates a Notion page and uploads Markdown as blocks.
-- `tag_predictor.py`: Loads `tags.txt` and predicts tags via OpenAI.
-- `title_translator.py`: Optional title translation using OpenAI.
-- `keep_alive.py`: Lightweight Flask server for uptime pings.
-- `start.sh`: Installs deps and runs the bot.
-- Data/assets: `tags.txt`, `url_list.txt`, `cookies.json`; output: `downloaded/`.
+## 開発コマンド
 
-## Build, Test, and Development Commands
-- Create env and install: `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
-- Run bot (recommended): `bash start.sh` or `python3 discord_bot.py`
-- Local scrape test: `python3 get_site.py` (writes `downloaded/output.md`)
-- Notion upload test (requires env): `python3 notion_table.py` (uses `downloaded/output.md` in its demo)
+### 環境セットアップ
+```bash
+# 仮想環境の作成
+python3 -m venv .venv
 
-Required env vars (example):
-```
-export FIRECRAWL_API_KEY=... 
-export OPENAI_API_KEY=...
-export NOTION_TOKEN=...
-export DISCORD_BOT_TOKEN=...
+# 仮想環境のアクティベート
+source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate      # Windows
+
+# 依存関係のインストール
+pip install -r requirements.txt
 ```
 
-## Coding Style & Naming Conventions
-- Python 3.x, PEP 8, 4‑space indentation; prefer type hints (see `notion_table.py`).
-- Filenames: `lower_snake_case.py`; functions/variables: `lower_snake_case`; constants: `UPPER_SNAKE`.
-- Keep modules single‑purpose; guard runnable demos with `if __name__ == "__main__":`.
+### アプリケーションの実行
+```bash
+# メインのDiscord Botを起動
+python discord_bot.py
 
-## Testing Guidelines
-- No formal test suite. Prefer smoke tests via module `__main__` blocks (`get_site.py`, `notion_table.py`).
-- If you add tests, use `pytest`, name files `tests/test_*.py`, and keep tests fast and isolated.
+# または、start.shスクリプトを使用（依存関係のインストールも含む）
+./start.sh
+```
 
-## Commit & Pull Request Guidelines
-- Commits: short, imperative; Japanese OK. Include scope when helpful.
-  - Example: `get_site: クッキー処理を簡素化` or `notion: fix block batching`.
-- PRs: clear description, linked issues, affected configs/env, and before/after behavior. Include logs or screenshots of successful runs where relevant.
+### 個別機能のテスト
+```bash
+# Webスクレイピング機能のテスト
+python get_site.py
 
-## Security & Configuration Tips
-- Never commit tokens or `cookies.json`. Use `.env` (loaded by `python-dotenv`) or exported env vars.
-- Update `WATCH_CHANNEL_IDS` in `discord_bot.py` for target channels. Notion Database ID is set in `notion_table.py`; adjust before deploy.
+# Notion登録機能のテスト
+python notion_table.py
+
+# タグ予測機能のテスト
+python tag_predictor.py
+
+# タイトル翻訳機能のテスト
+python title_translator.py
+```
+
+## アーキテクチャと構成
+
+### 主要コンポーネント
+
+1. **discord_bot.py** - メインアプリケーション
+   - Discord Botのエントリーポイント
+   - メッセージ監視とURL検出
+   - タスクキューによる非同期処理
+   - Keep-aliveサーバーの統合
+
+2. **get_site.py** - Webスクレイピング
+   - Firecrawl APIを使用したコンテンツ取得
+   - HTML→Markdown変換
+   - クッキー認証のサポート（`cookies.json`使用）
+
+3. **notion_table.py** - Notion連携
+   - Notionデータベースへのコンテンツ登録
+   - 長文コンテンツの分割処理
+   - エラーハンドリング
+
+4. **tag_predictor.py** - AI機能（タグ予測）
+   - OpenAI GPT-4o-miniを使用
+   - `tags.txt`から利用可能なタグを読み込み
+   - コンテンツに基づいた自動タグ付け
+
+5. **title_translator.py** - AI機能（翻訳）
+   - 非日本語タイトルの自動翻訳
+   - OpenAI APIを使用
+
+### データフロー
+
+1. Discord上でURLを含むメッセージを受信
+2. URLをタスクキューに追加
+3. Firecrawl APIでWebページを取得・変換
+4. OpenAI APIでタグ予測とタイトル翻訳
+5. Notionデータベースに保存
+6. 処理結果をDiscordに通知
+
+### 必要な環境変数
+
+以下の環境変数を`.env`ファイルまたはシステム環境変数に設定：
+
+- `DISCORD_BOT_TOKEN` - Discord Botのトークン
+- `NOTION_TOKEN` - Notion APIトークン
+- `FIRECRAWL_API_KEY` - Firecrawl APIキー
+- `OPENAI_API_KEY` - OpenAI APIキー
+- `NOTION_DATABASE_ID` - 保存先のNotionデータベースID
+- `DISCORD_CHANNEL_ID` - 監視するDiscordチャンネルID
+
+### 外部ファイル
+
+- **tags.txt** - 利用可能なタグのリスト（83個のタグ）
+- **cookies.json** - newsletter.gamediscover.co用の認証クッキー
+- **url_list.txt** - テスト用URLリスト
+
+## 開発時の注意点
+
+1. **エラーハンドリング**: 各処理段階でtry-exceptを使用し、エラーをDiscordに通知する設計
+2. **非同期処理**: Discord Botはメインスレッド、URL処理はバックグラウンドスレッドで実行
+3. **API制限**: OpenAI APIとFirecrawl APIの使用量に注意
+4. **Notionの制限**: ブロック数制限（1000ブロック）を考慮した分割処理が実装済み
