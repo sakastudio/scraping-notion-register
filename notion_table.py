@@ -183,7 +183,28 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
             return {"object": "block", "type": "to_do", "to_do": {"rich_text": rich_text, "checked": checked}}
 
         def _code_block(text: str, lang_hint: str):
+            # Notionがサポートする言語のリスト
+            notion_supported_languages = {
+                "abap", "abc", "agda", "arduino", "ascii art", "assembly", "bash", "basic", "bnf",
+                "c", "c#", "c++", "clojure", "coffeescript", "coq", "css", "dart", "dhall", "diff",
+                "docker", "ebnf", "elixir", "elm", "erlang", "f#", "flow", "fortran", "gherkin",
+                "glsl", "go", "graphql", "groovy", "haskell", "hcl", "html", "idris", "java",
+                "javascript", "json", "julia", "kotlin", "latex", "less", "lisp", "livescript",
+                "llvm ir", "lua", "makefile", "markdown", "markup", "matlab", "mathematica",
+                "mermaid", "nix", "notion formula", "objective-c", "ocaml", "pascal", "perl",
+                "php", "plain text", "powershell", "prolog", "protobuf", "purescript", "python",
+                "r", "racket", "reason", "ruby", "rust", "sass", "scala", "scheme", "scss",
+                "shell", "smalltalk", "solidity", "sql", "swift", "toml", "typescript", "vb.net",
+                "verilog", "vhdl", "visual basic", "webassembly", "xml", "yaml", "java/c/c++/c#"
+            }
+
+            # 言語ヒントをクリーンアップ（スペースやハイフン以降を削除）
             lang = (lang_hint or "").strip().lower()
+            # "bash code-line" のような複合的な文字列から最初の単語だけを取得
+            lang = lang.split()[0] if lang else "plain text"
+            lang = lang.split("-")[0] if "-" in lang else lang
+
+            # よく使われる言語のエイリアスマッピング
             mapping = {
                 "sh": "shell",
                 "bash": "shell",
@@ -191,15 +212,22 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
                 "js": "javascript",
                 "ts": "typescript",
                 "py": "python",
-                "c++": "cpp",
-                "c#": "csharp",
-                "objective-c": "objective-c",
+                "cpp": "c++",
+                "csharp": "c#",
+                "objc": "objective-c",
                 "text": "plain text",
                 "txt": "plain text",
                 "md": "markdown",
                 "yml": "yaml",
             }
-            lang = mapping.get(lang, lang if lang else "plain text")
+
+            # マッピングを適用
+            lang = mapping.get(lang, lang)
+
+            # Notionがサポートする言語でない場合は "plain text" を使用
+            if lang not in notion_supported_languages:
+                lang = "plain text"
+
             return {"object": "block", "type": "code",
                     "code": {"rich_text": _split_text_to_rich(text), "language": lang}}
 
