@@ -107,34 +107,8 @@ def process_register_task(task):
     try:
         # YouTube URLかどうかチェック
         if is_youtube_url(url):
-            # YouTube動画の処理
-            status_msg = f"YouTube動画の情報を取得しています..."
-            send_discord_message(channel_id, status_msg)
-            
-            # 動画情報と字幕を取得（Discord送信関数を渡す）
-            def youtube_log_sender(msg):
-                send_discord_message(channel_id, f"🔍 {msg}")
-            
-            title, description, transcript, metadata = fetch_youtube_info(
-                url, 
-                send_message_func=youtube_log_sender
-            )
-            if not title:
-                send_discord_message(channel_id, f"❌ YouTube動画の情報取得に失敗しました: {url}")
-                return
-            
-            # 字幕から記事を生成
-            status_msg = f"字幕から記事を生成しています..."
-            send_discord_message(channel_id, status_msg)
-            
-            # 記事生成と字幕の結合
-            content = process_youtube_for_notion(
-                title=title,
-                description=description,
-                transcript=transcript,
-                url=url,
-                metadata=metadata
-            )
+
+            send_discord_message(channel_id, "YouTube動画を検出しました。記事生成はChrome拡張を使ってください。")
         else:
             # 通常のWebページの処理
             status_msg = f"サイトのコンテンツを取得しています..."
