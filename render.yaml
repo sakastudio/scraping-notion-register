@@ -2,6 +2,7 @@ services:
   - type: web
     name: scraping-notion-register
     runtime: python
+    region: frankfurt
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python3 discord_bot.py
