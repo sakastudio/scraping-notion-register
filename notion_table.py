@@ -51,6 +51,9 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
             tags = []
             print("タグのリストが読み込めなかったため、タグなしで登録します。")
 
+    # タイトルから改行を除去
+    title = re.sub(r'[\r\n]+', ' ', title).strip()
+
     # まずページ基本情報を作成する
     try:
         # プロパティの設定

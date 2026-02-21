@@ -11,6 +11,14 @@ try:
 except ImportError:
     print("警告: Playwrightがインストールされていません。fxtwitter APIのみを使用します。")
 
+# X/Twitter URLの正規表現パターン
+X_URL_PATTERN = re.compile(
+    r'https?://(?:www\.)?(?:twitter\.com|x\.com|mobile\.twitter\.com)/\w+/status/(\d+)'
+)
+
+# 再帰の最大深度（無限ループ防止）
+MAX_RECURSION_DEPTH = 10
+
 
 def _extract_post_id(url: str) -> str:
     """X/Twitter URLからポストIDを抽出"""
@@ -25,14 +33,43 @@ def _normalize_x_url(url: str) -> str:
     return re.sub(r'https?://(www\.)?(twitter\.com|mobile\.twitter\.com)', 'https://x.com', url)
 
 
-def _fetch_via_fxtwitter_api(url: str) -> Optional[Dict]:
+def _extract_images_from_tweet(tweet: Dict) -> List[str]:
+    """tweetオブジェクトから画像URLを抽出"""
+    images = []
+    media = tweet.get("media")
+    if media:
+        photos = media.get("photos", [])
+        for photo in photos:
+            img_url = photo.get("url")
+            if img_url:
+                images.append(img_url)
+    return images
+
+
+def _parse_tweet_data(tweet: Dict) -> Dict:
+    """fxtwitter APIのtweetオブジェクトを共通データ形式に変換"""
+    return {
+        "text": tweet.get("text", ""),
+        "author_name": tweet.get("author", {}).get("name", ""),
+        "author_handle": tweet.get("author", {}).get("screen_name", ""),
+        "timestamp": tweet.get("created_at", ""),
+        "url": tweet.get("url", ""),
+        "images": _extract_images_from_tweet(tweet),
+    }
+
+
+def _extract_x_urls_from_text(text: str) -> List[str]:
+    """テキストからX/Twitter URLを抽出"""
+    return X_URL_PATTERN.findall(text)
+
+
+def _fetch_tweet_raw(url: str) -> Optional[Dict]:
     """
-    fxtwitter APIから構造化データを取得（ブラウザ不要）
+    fxtwitter APIから生のtweetオブジェクトを取得
 
     戻り値:
-        dict: ポストデータ or None（失敗時）
+        dict: fxtwitter APIのtweetオブジェクト or None
     """
-    # URL変換: x.com/user/status/123 -> api.fxtwitter.com/user/status/123
     api_url = re.sub(
         r'https?://(www\.)?(twitter\.com|x\.com|mobile\.twitter\.com)',
         'https://api.fxtwitter.com',
@@ -48,32 +85,85 @@ def _fetch_via_fxtwitter_api(url: str) -> Optional[Dict]:
         data = response.json()
         tweet = data.get("tweet")
         if not tweet:
-            print("fxtwitter API: tweetフィールドが見つかりません")
+            print(f"fxtwitter API: tweetフィールドが見つかりません: {url}")
             return None
 
-        # 画像URLの抽出
-        images = []
-        media = tweet.get("media")
-        if media:
-            photos = media.get("photos", [])
-            for photo in photos:
-                img_url = photo.get("url")
-                if img_url:
-                    images.append(img_url)
-
-        return {
-            "text": tweet.get("text", ""),
-            "author_name": tweet.get("author", {}).get("name", ""),
-            "author_handle": tweet.get("author", {}).get("screen_name", ""),
-            "timestamp": tweet.get("created_at", ""),
-            "images": images,
-        }
+        return tweet
     except requests.RequestException as e:
         print(f"fxtwitter API リクエストエラー: {e}")
         return None
     except (ValueError, KeyError) as e:
         print(f"fxtwitter API パースエラー: {e}")
         return None
+
+
+def _collect_all_tweets_from_api(url: str, visited: Optional[set] = None, depth: int = 0) -> List[Dict]:
+    """
+    fxtwitter APIを使って、引用ツイートとテキスト中のX URLを再帰的にすべて取得
+
+    引数:
+        url: 起点となるポストURL
+        visited: 処理済みポストIDのセット（循環防止）
+        depth: 現在の再帰深度
+
+    戻り値:
+        list: 取得した全ポストデータのリスト（先頭が元ツイート）
+    """
+    if visited is None:
+        visited = set()
+
+    if depth > MAX_RECURSION_DEPTH:
+        print(f"再帰深度の上限に達しました: {url}")
+        return []
+
+    post_id = _extract_post_id(url)
+    if post_id in visited:
+        return []
+    visited.add(post_id)
+
+    tweet_raw = _fetch_tweet_raw(url)
+    if tweet_raw is None:
+        return []
+
+    result = [_parse_tweet_data(tweet_raw)]
+
+    # 1. quote フィールドの引用ツイートを取得（API応答に含まれる）
+    quote = tweet_raw.get("quote")
+    if quote:
+        quote_url = quote.get("url", "")
+        quote_id = ""
+        if quote_url:
+            m = re.search(r'/status/(\d+)', quote_url)
+            if m:
+                quote_id = m.group(1)
+
+        if quote_id and quote_id not in visited:
+            visited.add(quote_id)
+            quote_data = _parse_tweet_data(quote)
+            result.append(quote_data)
+
+            # 引用ツイートからさらに再帰
+            nested = quote.get("quote")
+            if nested:
+                nested_url = nested.get("url", "")
+                if nested_url:
+                    result.extend(_collect_all_tweets_from_api(nested_url, visited, depth + 1))
+
+            # 引用ツイートのテキスト中のX URLも再帰取得
+            quote_text = quote.get("text", "")
+            for linked_id in _extract_x_urls_from_text(quote_text):
+                if linked_id not in visited:
+                    linked_url = f"https://x.com/i/status/{linked_id}"
+                    result.extend(_collect_all_tweets_from_api(linked_url, visited, depth + 1))
+
+    # 2. テキスト中のX/Twitter URLを再帰取得
+    text = tweet_raw.get("text", "")
+    for linked_id in _extract_x_urls_from_text(text):
+        if linked_id not in visited:
+            linked_url = f"https://x.com/i/status/{linked_id}"
+            result.extend(_collect_all_tweets_from_api(linked_url, visited, depth + 1))
+
+    return result
 
 
 def _fetch_via_playwright(url: str) -> Optional[Dict]:
@@ -104,17 +194,13 @@ def _fetch_via_playwright(url: str) -> Optional[Dict]:
 
         try:
             page.goto(normalized_url, wait_until="networkidle", timeout=30000)
-            # ツイートテキストの表示を待機
             page.wait_for_selector('[data-testid="tweetText"]', timeout=15000)
 
-            # テキスト取得
             tweet_text_el = page.query_selector('[data-testid="tweetText"]')
             text = tweet_text_el.inner_text() if tweet_text_el else ""
 
-            # 著者情報取得
             author_el = page.query_selector('[data-testid="User-Name"]')
             author_raw = author_el.inner_text() if author_el else ""
-            # User-Nameには "DisplayName\n@handle" 形式が含まれる
             author_parts = author_raw.split("\n") if author_raw else []
             author_name = author_parts[0].strip() if len(author_parts) > 0 else ""
             author_handle = ""
@@ -123,17 +209,14 @@ def _fetch_via_playwright(url: str) -> Optional[Dict]:
                     author_handle = part.strip().lstrip("@")
                     break
 
-            # タイムスタンプ取得
             time_el = page.query_selector("time")
             timestamp = time_el.get_attribute("datetime") if time_el else ""
 
-            # 画像URL取得
             images = []
             img_elements = page.query_selector_all('[data-testid="tweetPhoto"] img')
             for img in img_elements:
                 src = img.get_attribute("src")
                 if src and "pbs.twimg.com" in src:
-                    # 高画質版に変換
                     src = re.sub(r'name=\w+', 'name=large', src)
                     images.append(src)
 
@@ -142,6 +225,7 @@ def _fetch_via_playwright(url: str) -> Optional[Dict]:
                 "author_name": author_name,
                 "author_handle": author_handle,
                 "timestamp": timestamp,
+                "url": normalized_url,
                 "images": images,
             }
         except Exception as e:
@@ -151,32 +235,27 @@ def _fetch_via_playwright(url: str) -> Optional[Dict]:
             browser.close()
 
 
-def _format_as_markdown(data: Dict, original_url: str) -> Tuple[str, str]:
-    """取得したポストデータをマークダウン形式に変換"""
+def _format_single_tweet(data: Dict) -> List[str]:
+    """単一ポストのマークダウン行リストを生成"""
     author_name = data.get("author_name", "不明")
     author_handle = data.get("author_handle", "")
     text = data.get("text", "")
     timestamp = data.get("timestamp", "")
+    tweet_url = data.get("url", "")
     images = data.get("images", [])
 
-    # タイトル生成
-    if len(text) > 50:
-        title = f"@{author_handle}: {text[:50]}..."
-    else:
-        title = f"@{author_handle}: {text}" if text else f"@{author_handle} のポスト"
-
-    # マークダウンコンテンツ生成
     lines = []
     lines.append(f"## {author_name} (@{author_handle})")
     if timestamp:
         lines.append(f"**投稿日時**: {timestamp}")
+    if tweet_url:
+        lines.append(f"**URL**: {tweet_url}")
     lines.append("")
     lines.append("---")
     lines.append("")
     lines.append(text)
     lines.append("")
 
-    # 画像をマークダウン画像構文で追加
     if images:
         lines.append("### 添付画像")
         lines.append("")
@@ -184,15 +263,49 @@ def _format_as_markdown(data: Dict, original_url: str) -> Tuple[str, str]:
             lines.append(f"![画像{i}]({img_url})")
             lines.append("")
 
-    return (title, "\n".join(lines))
+    return lines
+
+
+def _format_all_tweets_as_markdown(tweets: List[Dict], original_url: str) -> Tuple[str, str]:
+    """複数ポストをまとめてマークダウンに変換"""
+    if not tweets:
+        raise RuntimeError("取得したポストがありません")
+
+    # タイトルは最初のツイート（元ツイート）から生成
+    first = tweets[0]
+    author_handle = first.get("author_handle", "")
+    text = first.get("text", "")
+    # タイトルから改行を除去
+    title_text = re.sub(r'[\r\n]+', ' ', text).strip()
+    if len(title_text) > 50:
+        title = f"@{author_handle}: {title_text[:50]}..."
+    else:
+        title = f"@{author_handle}: {title_text}" if title_text else f"@{author_handle} のポスト"
+
+    # マークダウン生成
+    all_lines = []
+    for i, tweet_data in enumerate(tweets):
+        if i > 0:
+            # 引用/リンク元ツイートの区切り
+            all_lines.append("")
+            all_lines.append("---")
+            all_lines.append("")
+            label = "引用元ツイート" if i == 1 else f"関連ツイート ({i})"
+            all_lines.append(f"> **{label}**")
+            all_lines.append("")
+
+        all_lines.extend(_format_single_tweet(tweet_data))
+
+    return (title, "\n".join(all_lines))
 
 
 def fetch_x_post(url: str) -> Tuple[str, str]:
     """
     X/Twitterのポストを取得し、マークダウンとして返す
+    引用ツイートやテキスト中のX URLも再帰的に取得する
 
-    Tier1: fxtwitter API（高速・軽量）
-    Tier2: Playwright（フォールバック）
+    Tier1: fxtwitter API（高速・軽量・引用ツイート再帰対応）
+    Tier2: Playwright（フォールバック、単一ツイートのみ）
 
     引数:
         url: X/TwitterのポストURL
@@ -200,17 +313,18 @@ def fetch_x_post(url: str) -> Tuple[str, str]:
     戻り値:
         tuple: (タイトル, マークダウンコンテンツ)
     """
-    # ポストIDの存在確認
     _extract_post_id(url)
 
-    # Tier 1: fxtwitter API
+    # Tier 1: fxtwitter API（再帰取得）
     print(f"fxtwitter APIで取得を試みます: {url}")
-    data = _fetch_via_fxtwitter_api(url)
+    tweets = _collect_all_tweets_from_api(url)
 
-    # Tier 2: Playwright フォールバック
-    if data is None:
-        print("fxtwitter APIでの取得に失敗。Playwrightで再試行します...")
-        data = _fetch_via_playwright(url)
+    if tweets:
+        return _format_all_tweets_as_markdown(tweets, url)
+
+    # Tier 2: Playwright フォールバック（単一ツイートのみ）
+    print("fxtwitter APIでの取得に失敗。Playwrightで再試行します...")
+    data = _fetch_via_playwright(url)
 
     if data is None:
         raise RuntimeError(
@@ -218,7 +332,7 @@ def fetch_x_post(url: str) -> Tuple[str, str]:
             f"fxtwitter APIとPlaywrightの両方で取得できませんでした: {url}"
         )
 
-    return _format_as_markdown(data, url)
+    return _format_all_tweets_as_markdown([data], url)
 
 
 if __name__ == "__main__":
