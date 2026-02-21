@@ -299,7 +299,7 @@ def _format_all_tweets_as_markdown(tweets: List[Dict], original_url: str) -> Tup
     return (title, "\n".join(all_lines))
 
 
-def fetch_x_post(url: str) -> Tuple[str, str]:
+def fetch_x_post(url: str) -> Tuple[str, str, set]:
     """
     X/Twitterのポストを取得し、マークダウンとして返す
     引用ツイートやテキスト中のX URLも再帰的に取得する
@@ -311,16 +311,18 @@ def fetch_x_post(url: str) -> Tuple[str, str]:
         url: X/TwitterのポストURL
 
     戻り値:
-        tuple: (タイトル, マークダウンコンテンツ)
+        tuple: (タイトル, マークダウンコンテンツ, 取得した全ポストIDのセット)
     """
-    _extract_post_id(url)
+    post_id = _extract_post_id(url)
 
     # Tier 1: fxtwitter API（再帰取得）
     print(f"fxtwitter APIで取得を試みます: {url}")
-    tweets = _collect_all_tweets_from_api(url)
+    visited = set()
+    tweets = _collect_all_tweets_from_api(url, visited)
 
     if tweets:
-        return _format_all_tweets_as_markdown(tweets, url)
+        title, content = _format_all_tweets_as_markdown(tweets, url)
+        return (title, content, visited)
 
     # Tier 2: Playwright フォールバック（単一ツイートのみ）
     print("fxtwitter APIでの取得に失敗。Playwrightで再試行します...")
@@ -332,7 +334,8 @@ def fetch_x_post(url: str) -> Tuple[str, str]:
             f"fxtwitter APIとPlaywrightの両方で取得できませんでした: {url}"
         )
 
-    return _format_all_tweets_as_markdown([data], url)
+    title, content = _format_all_tweets_as_markdown([data], url)
+    return (title, content, {post_id})
 
 
 if __name__ == "__main__":
@@ -344,8 +347,9 @@ if __name__ == "__main__":
         print(f"\nテスト URL: {test_url}")
         print("-" * 50)
         try:
-            title, content = fetch_x_post(test_url)
+            title, content, collected_ids = fetch_x_post(test_url)
             print(f"タイトル: {title}")
+            print(f"取得ポストID: {collected_ids}")
             print(f"コンテンツ長: {len(content)}文字")
             print()
             print(content)

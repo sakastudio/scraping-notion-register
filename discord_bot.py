@@ -46,6 +46,10 @@ def is_x_url(url: str) -> bool:
 # 処理キュー
 task_queue = queue.Queue()
 
+# 同一メッセージ内で既に取得済みのXポストIDを追跡（重複登録防止）
+# key: message_id, value: set of post IDs
+_message_processed_x_ids = {}
+
 intents = discord.Intents.default()
 intents.message_content = True  # メッセージの内容を取得する権限
 
@@ -123,9 +127,24 @@ def process_register_task(task):
             send_discord_message(channel_id, "YouTube動画を検出しました。記事生成はChrome拡張を使ってください。")
             return
         elif is_x_url(url):
+            # 同一メッセージ内で既に取得済みのポストIDかチェック
+            post_id_match = re.search(r'/status/(\d+)', url)
+            msg_id = task.get('message_id')
+            if post_id_match and msg_id:
+                post_id = post_id_match.group(1)
+                if msg_id in _message_processed_x_ids and post_id in _message_processed_x_ids[msg_id]:
+                    send_discord_message(channel_id, f"ポスト `{url}` は引用ツイートとして既に登録済みのためスキップします。")
+                    return
+
             # X/Twitterポストの処理
             send_discord_message(channel_id, "X/Twitterのポストを取得しています...")
-            title, content = fetch_x_post(url)
+            title, content, collected_ids = fetch_x_post(url)
+
+            # 取得した全ポストIDを記録（同一メッセージの後続タスクで重複防止）
+            if msg_id and collected_ids:
+                if msg_id not in _message_processed_x_ids:
+                    _message_processed_x_ids[msg_id] = set()
+                _message_processed_x_ids[msg_id].update(collected_ids)
         else:
             # 通常のWebページの処理
             status_msg = f"サイトのコンテンツを取得しています..."
