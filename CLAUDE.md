@@ -100,6 +100,33 @@ python title_translator.py
 - **cookies.json** - newsletter.gamediscover.co用の認証クッキー
 - **url_list.txt** - テスト用URLリスト
 
+## デプロイ
+
+本番環境はRender（無料プラン）にデプロイされている。mainブランチへのpushで自動デプロイが走る。
+
+### 作業完了後の手順
+
+コード変更をpushしたら、必ずデプロイ結果を確認すること：
+
+```bash
+# サービスID確認
+render services list --output json
+
+# 最新デプロイのステータス確認（サービスID: srv-d64kkkq4d50c73ehkqfg）
+render deploys list srv-d64kkkq4d50c73ehkqfg --output json
+
+# ビルドログ確認（エラー時）
+render logs -r srv-d64kkkq4d50c73ehkqfg --output json --type build --limit 100
+```
+
+`status` が `live` になれば成功。`build_failed` の場合はログを確認して修正する。
+
+### Render環境の制約
+
+- **root権限なし**: `--with-deps` 等のシステムパッケージインストールは不可
+- **メモリ512MB**: 重い処理（Chromium起動等）は注意
+- **無料プランの自動スリープ**: keep_aliveサーバーで対策済み
+
 ## 開発時の注意点
 
 1. **エラーハンドリング**: 各処理段階でtry-exceptを使用し、エラーをDiscordに通知する設計
