@@ -10,6 +10,7 @@ from keep_alive import keep_alive
 from get_site import fetch_and_convert_to_markdown
 from get_youtube import fetch_youtube_info, extract_video_id
 from article_generator import process_youtube_for_notion
+from get_x_post import fetch_x_post
 from notion_table import register_notion_table
 from title_translator import is_non_japanese_title, translate_title
 
@@ -29,6 +30,18 @@ def is_youtube_url(url: str) -> bool:
         'm.youtube.com'
     ]
     return any(domain in url.lower() for domain in youtube_domains)
+
+# X/Twitter URLの判定関数
+def is_x_url(url: str) -> bool:
+    """X/Twitter URLかどうかを判定"""
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname or ''
+        x_domains = ['x.com', 'twitter.com', 'www.x.com', 'www.twitter.com', 'mobile.twitter.com']
+        return hostname in x_domains
+    except Exception:
+        return False
 
 # 処理キュー
 task_queue = queue.Queue()
@@ -107,14 +120,19 @@ def process_register_task(task):
     try:
         # YouTube URLかどうかチェック
         if is_youtube_url(url):
-
             send_discord_message(channel_id, "YouTube動画を検出しました。記事生成はChrome拡張を使ってください。")
+            return
+        elif is_x_url(url):
+            # X/Twitterポストの処理
+            send_discord_message(channel_id, "X/Twitterのポストを取得しています...")
+            title, content = fetch_x_post(url)
         else:
             # 通常のWebページの処理
             status_msg = f"サイトのコンテンツを取得しています..."
             send_discord_message(channel_id, status_msg)
             # サイトのタイトルとコンテンツを取得
             title, content = fetch_and_convert_to_markdown(url)
+
         if not content:
             send_discord_message(channel_id, f"❌ コンテンツの取得に失敗しました: {url}")
             return

@@ -279,6 +279,30 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
         todo_bullet_re = re.compile(r"^[-*+]\s+\[( |x|X)\]\s+(.*)$")
         todo_numbered_re = re.compile(r"^\d+\.\s+\[( |x|X)\]\s+(.*)$")
         quote_re = re.compile(r"^>\s?(.*)$")
+        image_re = re.compile(r"^!\[([^\]]*)\]\((https?://[^\s)]+)\)\s*$")
+
+        def _image_block(img_url: str, caption: str = ""):
+            """Notion画像ブロックを生成"""
+            block = {
+                "object": "block",
+                "type": "image",
+                "image": {
+                    "type": "external",
+                    "external": {
+                        "url": img_url
+                    }
+                }
+            }
+            if caption:
+                block["image"]["caption"] = [
+                    {
+                        "type": "text",
+                        "text": {
+                            "content": caption[:MAX_TEXT_LENGTH]
+                        }
+                    }
+                ]
+            return block
 
         def flush_paragraph():
             nonlocal para_buf
@@ -373,6 +397,15 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
                 flush_paragraph()
                 item_text = m_n.group(1).strip()
                 blocks.extend(_add_inline_as_blocks(item_text, _numbered_item_block_rich))
+                continue
+
+            # 画像
+            m_img = image_re.match(line.strip())
+            if m_img:
+                flush_paragraph()
+                alt_text = m_img.group(1)
+                img_url = m_img.group(2)
+                blocks.append(_image_block(img_url, alt_text))
                 continue
 
             # それ以外は通常段落の一部としてバッファ
