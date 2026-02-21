@@ -11,6 +11,7 @@ from get_site import fetch_and_convert_to_markdown
 from get_youtube import fetch_youtube_info, extract_video_id
 from article_generator import process_youtube_for_notion
 from get_x_post import fetch_x_post
+from get_x_article import fetch_x_article, is_x_article_url
 from notion_table import register_notion_table
 from title_translator import is_non_japanese_title, translate_title
 
@@ -126,6 +127,10 @@ def process_register_task(task):
         if is_youtube_url(url):
             send_discord_message(channel_id, "YouTube動画を検出しました。記事生成はChrome拡張を使ってください。")
             return
+        elif is_x_article_url(url):
+            # X/Twitter記事（Article）の処理
+            send_discord_message(channel_id, "X/Twitterの記事（Article）を取得しています...")
+            title, content = fetch_x_article(url)
         elif is_x_url(url):
             # 同一メッセージ内で既に取得済みのポストIDかチェック
             post_id_match = re.search(r'/status/(\d+)', url)
