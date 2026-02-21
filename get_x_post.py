@@ -63,6 +63,136 @@ def _extract_x_urls_from_text(text: str) -> List[str]:
     return X_URL_PATTERN.findall(text)
 
 
+def _convert_article_blocks_to_markdown(article: Dict) -> str:
+    """
+    fxtwitter APIのarticleオブジェクトのcontent.blocksをMarkdownに変換
+
+    引数:
+        article: fxtwitter APIのarticleオブジェクト
+
+    戻り値:
+        str: Markdown文字列
+    """
+    content = article.get("content", {})
+    blocks = content.get("blocks", [])
+
+    if not blocks:
+        return article.get("preview_text", "")
+
+    lines = []
+    ordered_counter = 0
+
+    for block in blocks:
+        block_type = block.get("type", "unstyled")
+        text = block.get("text", "")
+
+        # インラインスタイルの適用（Bold, Italic）
+        inline_styles = block.get("inlineStyleRanges", [])
+        if inline_styles and text:
+            # オフセットの大きい方から適用（位置ずれ防止）
+            sorted_styles = sorted(inline_styles, key=lambda s: s.get("offset", 0), reverse=True)
+            for style in sorted_styles:
+                offset = style.get("offset", 0)
+                length = style.get("length", 0)
+                style_type = style.get("style", "")
+                if length > 0 and offset + length <= len(text):
+                    target = text[offset:offset + length]
+                    if style_type == "BOLD":
+                        styled = f"**{target}**"
+                    elif style_type == "ITALIC":
+                        styled = f"*{target}*"
+                    else:
+                        continue
+                    text = text[:offset] + styled + text[offset + length:]
+
+        if block_type == "header-one":
+            ordered_counter = 0
+            lines.append(f"# {text}")
+            lines.append("")
+        elif block_type == "header-two":
+            ordered_counter = 0
+            lines.append(f"## {text}")
+            lines.append("")
+        elif block_type == "unordered-list-item":
+            ordered_counter = 0
+            lines.append(f"- {text}")
+        elif block_type == "ordered-list-item":
+            ordered_counter += 1
+            lines.append(f"{ordered_counter}. {text}")
+        elif block_type == "blockquote":
+            ordered_counter = 0
+            lines.append(f"> {text}")
+            lines.append("")
+        elif block_type == "atomic":
+            ordered_counter = 0
+            # メディア埋め込み（画像等）はスキップ（別途media_entitiesで処理可能）
+            if text:
+                lines.append(text)
+                lines.append("")
+        else:
+            # unstyled（通常の段落）
+            ordered_counter = 0
+            if text:
+                lines.append(text)
+                lines.append("")
+            else:
+                # 空行（段落の区切り）
+                lines.append("")
+
+    return "\n".join(lines)
+
+
+def _format_article_as_markdown(tweet_raw: Dict) -> Tuple[str, str]:
+    """
+    fxtwitter APIのtweetオブジェクトからX記事をMarkdownに変換
+
+    引数:
+        tweet_raw: fxtwitter APIのtweetオブジェクト（articleフィールドを含む）
+
+    戻り値:
+        tuple: (タイトル, マークダウンコンテンツ)
+    """
+    article = tweet_raw.get("article", {})
+    author = tweet_raw.get("author", {})
+
+    title = article.get("title", "")
+    author_name = author.get("name", "")
+    author_handle = author.get("screen_name", "")
+    created_at = article.get("created_at", tweet_raw.get("created_at", ""))
+    tweet_url = tweet_raw.get("url", "")
+
+    # 記事本文をMarkdownに変換
+    body = _convert_article_blocks_to_markdown(article)
+
+    # メタデータヘッダー付きの完全なMarkdownを構築
+    lines = []
+    if author_name or author_handle:
+        lines.append(f"**著者**: {author_name} (@{author_handle})")
+    if created_at:
+        lines.append(f"**公開日時**: {created_at}")
+    if tweet_url:
+        lines.append(f"**URL**: {tweet_url}")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    lines.append(body)
+
+    # 記事に添付された画像
+    cover_media = article.get("cover_media", {})
+    if cover_media:
+        cover_url = cover_media.get("url", "")
+        if cover_url:
+            lines.append("")
+            lines.append(f"![カバー画像]({cover_url})")
+
+    content = "\n".join(lines)
+
+    if not title:
+        title = f"X Article by @{author_handle}" if author_handle else "X Article"
+
+    return (title, content)
+
+
 def _fetch_tweet_raw(url: str) -> Optional[Dict]:
     """
     fxtwitter APIから生のtweetオブジェクトを取得
@@ -317,6 +447,14 @@ def fetch_x_post(url: str) -> Tuple[str, str, set]:
 
     # Tier 1: fxtwitter API（再帰取得）
     print(f"fxtwitter APIで取得を試みます: {url}")
+
+    # まず生のtweetオブジェクトを取得してArticleかどうかチェック
+    tweet_raw = _fetch_tweet_raw(url)
+    if tweet_raw and tweet_raw.get("article"):
+        print("X記事（Article）を検出しました。記事コンテンツを変換します。")
+        title, content = _format_article_as_markdown(tweet_raw)
+        return (title, content, {post_id})
+
     visited = set()
     tweets = _collect_all_tweets_from_api(url, visited)
 
@@ -341,6 +479,7 @@ def fetch_x_post(url: str) -> Tuple[str, str, set]:
 if __name__ == "__main__":
     test_urls = [
         "https://x.com/elikinosita/status/1892818905975779378",
+        "https://x.com/mizchi/status/2023352622368047439",  # X Article
     ]
 
     for test_url in test_urls:
