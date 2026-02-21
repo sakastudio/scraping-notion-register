@@ -106,20 +106,22 @@ python title_translator.py
 
 ### 作業完了後の手順
 
-コード変更をpushしたら、必ずデプロイ結果を確認すること：
+コード変更後は、commit・push・デプロイ確認までを一連の作業として行うこと。デプロイが失敗した場合は修正してliveになるまで繰り返す。
 
 ```bash
-# サービスID確認
-render services list --output json
+# 1. commit & push
+git add <変更ファイル> && git commit -m "メッセージ" && git push origin main
 
-# 最新デプロイのステータス確認（サービスID: srv-d64kkkq4d50c73ehkqfg）
+# 2. デプロイステータスを確認（statusがliveになるまで待つ）
 render deploys list srv-d64kkkq4d50c73ehkqfg --output json
 
-# ビルドログ確認（エラー時）
+# 3. ビルド失敗時はログを確認して修正
 render logs -r srv-d64kkkq4d50c73ehkqfg --output json --type build --limit 100
+
+# 4. 修正後は再度commit & pushしてステータスがliveになるまで繰り返す
 ```
 
-`status` が `live` になれば成功。`build_failed` の場合はログを確認して修正する。
+`status` が `live` になれば成功。`build_failed` の場合はログを確認して修正→push→確認を繰り返す。
 
 ### Render環境の制約
 
