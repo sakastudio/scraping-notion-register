@@ -2,8 +2,9 @@ import os
 from typing import Optional
 from openai import OpenAI
 
-# OpenAI API設定
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# Gemini API設定（OpenAI互換エンドポイント経由で利用）
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
 def translate_title(title: str, source_lang: str = "en", target_lang: str = "ja") -> Optional[str]:
     """
@@ -17,8 +18,8 @@ def translate_title(title: str, source_lang: str = "en", target_lang: str = "ja"
     戻り値:
         str: 翻訳されたタイトル、または翻訳に失敗した場合はNone
     """
-    if not OPENAI_API_KEY:
-        print("警告: OPENAI_API_KEYが設定されていません。タイトル翻訳はスキップします。")
+    if not GEMINI_API_KEY:
+        print("警告: GEMINI_API_KEYが設定されていません。タイトル翻訳はスキップします。")
         return None
     
     if not title:
@@ -31,11 +32,11 @@ def translate_title(title: str, source_lang: str = "en", target_lang: str = "ja"
         return None
     
     # クライアントの初期化
-    client = OpenAI(api_key=OPENAI_API_KEY)
-    
+    client = OpenAI(api_key=GEMINI_API_KEY, base_url=GEMINI_BASE_URL)
+
     try:
         response = client.chat.completions.create(
-            model="gpt-5.4-nano",
+            model="gemini-3.5-flash",
             messages=[
                 {"role": "system", "content": f"あなたは優秀な{source_lang}から{target_lang}への翻訳者です。与えられたテキストを適切に翻訳してください。翻訳のみを返し、余計な説明は不要です。"},
                 {"role": "user", "content": f"以下のタイトルを翻訳してください：\n{title}"}

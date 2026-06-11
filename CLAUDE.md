@@ -90,7 +90,8 @@ python title_translator.py
 - `DISCORD_BOT_TOKEN` - Discord Botのトークン
 - `NOTION_TOKEN` - Notion APIトークン
 - `FIRECRAWL_API_KEY` - Firecrawl APIキー
-- `OPENAI_API_KEY` - OpenAI APIキー
+- `OPENAI_API_KEY` - OpenAI APIキー（記事生成で使用）
+- `GEMINI_API_KEY` - Gemini APIキー（タグ予測・タイトル翻訳で使用）
 - `NOTION_DATABASE_ID` - 保存先のNotionデータベースID
 - `DISCORD_CHANNEL_ID` - 監視するDiscordチャンネルID
 

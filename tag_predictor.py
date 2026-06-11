@@ -3,8 +3,9 @@ from typing import List
 
 from openai import OpenAI
 
-# OpenAI API設定
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# Gemini API設定（OpenAI互換エンドポイント経由で利用）
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
 
 def load_tags_from_file(file_path: str = "tags.txt") -> List[str]:
@@ -39,16 +40,16 @@ def predict_tags(content: str, title: str, available_tags: List[str], max_tags: 
     戻り値:
         List[str]: 予測されたタグのリスト
     """
-    if not OPENAI_API_KEY:
-        print("警告: OPENAI_API_KEYが設定されていません。タグ予測はスキップします。")
+    if not GEMINI_API_KEY:
+        print("警告: GEMINI_API_KEYが設定されていません。タグ予測はスキップします。")
         return []
-    
+
     if not available_tags:
         print("警告: 使用可能なタグが見つかりません。タグ予測はスキップします。")
         return []
-    
+
     # クライアントの初期化
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(api_key=GEMINI_API_KEY, base_url=GEMINI_BASE_URL)
     
     # コンテンツの最初の部分だけを使用（APIの文字数制限のため）
     trimmed_content = content[:3000] if len(content) > 3000 else content
@@ -57,9 +58,9 @@ def predict_tags(content: str, title: str, available_tags: List[str], max_tags: 
         # 使用可能なタグをカンマ区切りで結合
         tags_str = ", ".join(available_tags)
         
-        # GPT-5.4 nano（ナレッジカットオフ2025年8月）を呼び出し
+        # Gemini 3.5 Flash（ナレッジカットオフ2026年1月）を呼び出し
         response = client.chat.completions.create(
-            model="gpt-5.4-nano",
+            model="gemini-3.5-flash",
             messages=[
                 {"role": "system", "content": f"あなたはコンテンツに適したタグを選択する専門家です。以下のタグリストからコンテンツに最も関連するタグを選んでください: {tags_str}"},
                 {"role": "user", "content": f"タイトル: {title}\n\nコンテンツ: {trimmed_content}\n\nこのコンテンツに最適なタグを{max_tags}個以内で選んでください。タグはカンマ区切りのリストとして返してください。提示されたタグリスト以外のタグは使用しないでください。"}
