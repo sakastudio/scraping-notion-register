@@ -57,15 +57,15 @@ def predict_tags(content: str, title: str, available_tags: List[str], max_tags: 
         # 使用可能なタグをカンマ区切りで結合
         tags_str = ", ".join(available_tags)
         
-        # GPT-3.5 Turbo APIを呼び出し
+        # GPT-5.4 nano（ナレッジカットオフ2025年8月）を呼び出し
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5.4-nano",
             messages=[
                 {"role": "system", "content": f"あなたはコンテンツに適したタグを選択する専門家です。以下のタグリストからコンテンツに最も関連するタグを選んでください: {tags_str}"},
                 {"role": "user", "content": f"タイトル: {title}\n\nコンテンツ: {trimmed_content}\n\nこのコンテンツに最適なタグを{max_tags}個以内で選んでください。タグはカンマ区切りのリストとして返してください。提示されたタグリスト以外のタグは使用しないでください。"}
             ],
-            temperature=0.3,
-            max_tokens=150
+            reasoning_effort="none",
+            max_completion_tokens=500
         )
         
         # レスポンスからタグを抽出
