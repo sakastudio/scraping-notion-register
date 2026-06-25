@@ -8,7 +8,7 @@ from tag_predictor import load_tags_from_file, predict_tags
 
 # Notion API設定
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-NOTION_DATABASE_ID = "bb656c8f12024b45afae5bb2ad03578d"
+NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID", "bb656c8f12024b45afae5bb2ad03578d")
 
 
 def init_notion_client():

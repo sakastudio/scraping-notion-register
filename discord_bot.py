@@ -16,7 +16,9 @@ from notion_table import register_notion_table
 from title_translator import is_non_japanese_title, translate_title
 
 # 設定
-WATCH_CHANNEL_IDS = ["1350334310452039680"]
+# WATCH_CHANNEL_IDS: カンマ区切り複数指定可。後方互換として DISCORD_CHANNEL_ID も読む。
+_watch_channel_ids_env = os.environ.get("WATCH_CHANNEL_IDS") or os.environ.get("DISCORD_CHANNEL_ID", "1350334310452039680")
+WATCH_CHANNEL_IDS = [channel_id.strip() for channel_id in _watch_channel_ids_env.split(",") if channel_id.strip()]
 
 # URLの正規表現パターン
 URL_PATTERN = r'https?://[^\s)"]+'
@@ -73,8 +75,8 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    # 自分自身のメッセージは無視
-    if message.author == bot.user:
+    # Bot / Webhook 由来のメッセージは無視（Notion uploader bot からの通知にも反応しない）
+    if message.author == bot.user or getattr(message.author, "bot", False) or message.webhook_id is not None:
         return
 
     # 指定されたチャンネル以外のメッセージは無視

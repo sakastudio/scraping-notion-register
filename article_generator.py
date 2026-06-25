@@ -2,8 +2,19 @@ import os
 from openai import OpenAI
 from typing import Optional
 
-# OpenAI APIクライアントの初期化
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+# OpenAI APIクライアントは必要になったタイミングで初期化する
+# （YouTube処理を使わない通常URL登録でもBot起動できるようにする）
+client = None
+
+
+def get_openai_client():
+    global client
+    if client is None:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEYが設定されていません。YouTube記事生成には環境変数が必要です。")
+        client = OpenAI(api_key=api_key)
+    return client
 
 
 def generate_article_with_gpt5(
@@ -114,7 +125,7 @@ def generate_article_with_gpt5(
         # GPT-5で記事生成（Chat Completions API）
         print(f"GPT-5 ({model})を使用して記事を生成中...")
         
-        response = client.chat.completions.create(
+        response = get_openai_client().chat.completions.create(
             model=model,
             messages=[
                 {
