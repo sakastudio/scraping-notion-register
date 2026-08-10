@@ -3,6 +3,12 @@ import re
 import asyncio
 import threading
 import queue
+import json
+import sys
+import traceback
+from datetime import datetime
+from enum import StrEnum
+
 import discord
 from io import BytesIO
 
@@ -22,6 +28,52 @@ WATCH_CHANNEL_IDS = [channel_id.strip() for channel_id in _watch_channel_ids_env
 
 # URLの正規表現パターン
 URL_PATTERN = r'https?://[^\s)"]+'
+DISCORD_MESSAGE_LIMIT = 2000
+URL_LOG_PREFIX = "URL_EVENT"
+
+
+class UrlEvent(StrEnum):
+    DETECTED = "detected"
+    ENQUEUE_FAILED = "enqueue_failed"
+    PROCESSING_STARTED = "processing_started"
+    SKIPPED_YOUTUBE = "skipped_youtube"
+    SKIPPED_DUPLICATE = "skipped_duplicate"
+    PROCESSING_FAILED = "processing_failed"
+    COMPLETED = "completed"
+
+
+def log_url_event(event: UrlEvent, *, url, raw_url=None, channel_id=None, message_id=None, error=None, stream=None):
+    """URL処理イベントをbot.logで検索しやすい1行JSONとして記録する。"""
+    payload = {
+        "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "event": event.value,
+        "url": url,
+    }
+    if raw_url is not None:
+        payload["raw_url"] = raw_url
+    if channel_id is not None:
+        payload["channel_id"] = str(channel_id)
+    if message_id is not None:
+        payload["message_id"] = str(message_id)
+    if error is not None:
+        payload["error"] = str(error)
+    output = stream if stream is not None else sys.stdout
+    print(URL_LOG_PREFIX + " " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")), file=output, flush=True)
+
+
+def format_url_error_message(summary, url, error, *, location=None):
+    """Discordの上限内で、対象URLを必ずプレーンテキストで残す。"""
+    location_line = f"\n発生箇所: {location}" if location else ""
+    suffix = f"{location_line}\n対象URL:\n{url}"
+    prefix = f"❌ {summary}: "
+    error_text = str(error)
+    available = DISCORD_MESSAGE_LIMIT - len(prefix) - len(suffix)
+    if available < 0:
+        suffix = f"\n対象URL:\n{url[: max(0, DISCORD_MESSAGE_LIMIT - len(prefix) - 20)]}"
+        available = DISCORD_MESSAGE_LIMIT - len(prefix) - len(suffix)
+    if len(error_text) > available:
+        error_text = error_text[: max(0, available - 1)] + "…"
+    return prefix + error_text + suffix
 
 # YouTube URLの判定関数
 def is_youtube_url(url: str) -> bool:
@@ -91,6 +143,13 @@ async def on_message(message):
         
     for url in urls:
         try:
+            log_url_event(
+                UrlEvent.DETECTED,
+                raw_url=url,
+                url=url,
+                channel_id=message.channel.id,
+                message_id=message.id,
+            )
             # 処理開始メッセージ
             response = await message.channel.send(f"URL `{url}` を検出しました。処理を開始します...")
             
@@ -104,7 +163,8 @@ async def on_message(message):
             })
             
         except Exception as e:
-            await message.channel.send(f"エラーが発生しました: {str(e)}")
+            log_url_event(UrlEvent.ENQUEUE_FAILED, raw_url=url, url=url, channel_id=message.channel.id, message_id=message.id, error=e)
+            await message.channel.send(format_url_error_message("URL受付中にエラーが発生しました", url, e))
 
 # Discord チャンネルにメッセージを送信するヘルパー関数
 def send_discord_message(channel_id, message):
@@ -123,11 +183,13 @@ def process_register_task(task):
     channel_id = task['channel_id']
     url = task['url']
     tags = task.get('tags')  # タグは省略可能
+    log_url_event(UrlEvent.PROCESSING_STARTED, url=url, channel_id=channel_id, message_id=task.get('message_id'))
 
     try:
         # YouTube URLかどうかチェック
         if is_youtube_url(url):
             send_discord_message(channel_id, "YouTube動画を検出しました。記事生成はChrome拡張を使ってください。")
+            log_url_event(UrlEvent.SKIPPED_YOUTUBE, url=url, channel_id=channel_id, message_id=task.get('message_id'))
             return
         elif is_x_article_url(url):
             # X/Twitter記事（Article）の処理
@@ -141,6 +203,7 @@ def process_register_task(task):
                 post_id = post_id_match.group(1)
                 if msg_id in _message_processed_x_ids and post_id in _message_processed_x_ids[msg_id]:
                     send_discord_message(channel_id, f"ポスト `{url}` は引用ツイートとして既に登録済みのためスキップします。")
+                    log_url_event(UrlEvent.SKIPPED_DUPLICATE, url=url, channel_id=channel_id, message_id=msg_id)
                     return
 
             # X/Twitterポストの処理
@@ -160,7 +223,9 @@ def process_register_task(task):
             title, content = fetch_and_convert_to_markdown(url)
 
         if not content:
-            send_discord_message(channel_id, f"❌ コンテンツの取得に失敗しました: {url}")
+            error = RuntimeError("コンテンツが空でした")
+            log_url_event(UrlEvent.PROCESSING_FAILED, url=url, channel_id=channel_id, message_id=task.get('message_id'), error=error)
+            send_discord_message(channel_id, format_url_error_message("コンテンツの取得に失敗しました", url, error))
             return
 
         # タイトルの翻訳（英語など日本語以外の場合）
@@ -214,19 +279,21 @@ def process_register_task(task):
 
         message = f"✅ URLの登録が完了しました!\n{title_info}\n**元URL:** {url}\n**Notion URL:** {page_url}\n**{tag_info}**"
         send_discord_message(channel_id, message)
+        log_url_event(UrlEvent.COMPLETED, url=url, channel_id=channel_id, message_id=task.get('message_id'))
 
     except Exception as e:
-        # 例外発生箇所のファイル名と行番号を付けて通知
+        # 例外箇所とURLを通知・記録
         try:
-            import traceback
             tb = traceback.extract_tb(e.__traceback__)
             if tb:
                 filename, lineno, _, _ = tb[-1]
-                error_message = f"❌ 処理中にエラーが発生しました: {str(e)} (ファイル: {filename}, 行: {lineno})"
+                error_message = format_url_error_message("処理中にエラーが発生しました", url, e, location=f"{filename}:{lineno}")
             else:
-                error_message = f"❌ 処理中にエラーが発生しました: {str(e)}"
-        except Exception as _:
-            error_message = f"❌ 処理中にエラーが発生しました: {str(e)}"
+                error_message = format_url_error_message("処理中にエラーが発生しました", url, e)
+        except Exception:
+            error_message = format_url_error_message("処理中にエラーが発生しました", url, e)
+        log_url_event(UrlEvent.PROCESSING_FAILED, url=url, channel_id=channel_id, message_id=task.get('message_id'), error=e)
+        traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
         send_discord_message(channel_id, error_message)
 
 
