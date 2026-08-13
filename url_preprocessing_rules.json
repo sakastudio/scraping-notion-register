@@ -1,0 +1,7 @@
+{
+  "strip_query_and_fragment_hosts": [
+    "newsletter.gamediscover.co",
+    "speakerdeck.com",
+    "www.speakerdeck.com"
+  ]
+}

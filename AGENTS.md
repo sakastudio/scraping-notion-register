@@ -76,8 +76,12 @@ python title_translator.py
 2. URLをタスクキューに追加
 3. Firecrawl APIでWebページを取得・変換
 4. OpenAI APIでタグ予測とタイトル翻訳
-5. Notionデータベースに保存
-6. 処理結果をDiscordに通知
+5. URL前処理システムで登録用URLを正規化
+   - ルール本体: `url_preprocessor.py`
+   - ドメインリスト: `url_preprocessing_rules.json`
+   - `strip_query_and_fragment_hosts` に入れたドメインは、登録前にGETパラメータとフラグメントを削除
+6. Notionデータベースに保存
+7. 処理結果をDiscordに通知
 
 ### 必要な環境変数
 
@@ -94,6 +98,7 @@ python title_translator.py
 
 - **tags.txt** - 利用可能なタグのリスト（83個のタグ）
 - **cookies.json** - newsletter.gamediscover.co用の認証クッキー
+- **url_preprocessing_rules.json** - 登録前URL正規化のドメインリスト
 - **url_list.txt** - テスト用URLリスト
 
 ## 開発時の注意点

@@ -3,11 +3,13 @@ import re
 import asyncio
 import threading
 import queue
+import time
 import json
 import sys
 import traceback
 from datetime import datetime
 from enum import StrEnum
+from urllib.parse import urlparse
 
 import discord
 from io import BytesIO
@@ -20,10 +22,11 @@ from get_x_post import fetch_x_post
 from get_x_article import fetch_x_article, is_x_article_url
 from notion_table import register_notion_table
 from title_translator import is_non_japanese_title, translate_title
+from url_preprocessor import normalize_registration_url
 
 # 設定
 # WATCH_CHANNEL_IDS: カンマ区切り複数指定可。後方互換として DISCORD_CHANNEL_ID も読む。
-_watch_channel_ids_env = os.environ.get("WATCH_CHANNEL_IDS") or os.environ.get("DISCORD_CHANNEL_ID", "1350334310452039680")
+_watch_channel_ids_env = os.environ.get("WATCH_CHANNEL_IDS") or os.environ.get("DISCORD_CHANNEL_ID", "")
 WATCH_CHANNEL_IDS = [channel_id.strip() for channel_id in _watch_channel_ids_env.split(",") if channel_id.strip()]
 
 # URLの正規表現パターン
@@ -57,6 +60,7 @@ def log_url_event(event: UrlEvent, *, url, raw_url=None, channel_id=None, messag
         payload["message_id"] = str(message_id)
     if error is not None:
         payload["error"] = str(error)
+
     output = stream if stream is not None else sys.stdout
     print(URL_LOG_PREFIX + " " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")), file=output, flush=True)
 
@@ -101,6 +105,64 @@ def is_x_url(url: str) -> bool:
 # 処理キュー
 task_queue = queue.Queue()
 
+# 同じサイトへの連続アクセスを避けるためのクールダウン。
+# RedditのようにURL単位ではなくホスト単位で制限されるサイトに合わせ、
+# www/old/new/mobile などのサブドメイン差は同一ホストキーとして扱う。
+def _parse_url_cooldown_seconds(raw_value: str | None, default: float = 60.0) -> float:
+    try:
+        value = float(raw_value if raw_value is not None else default)
+    except (TypeError, ValueError):
+        return default
+    if value != value or value < 0 or value > 3600:
+        return default
+    return value
+
+
+URL_COOLDOWN_SECONDS = _parse_url_cooldown_seconds(os.environ.get("URL_COOLDOWN_SECONDS"))
+_url_last_processed_at = {}
+_url_cooldown_lock = threading.Lock()
+
+
+def _url_cooldown_key(url: str) -> str:
+    try:
+        hostname = (urlparse(url).hostname or "").lower()
+    except Exception:
+        return url.strip().lower()
+
+    if hostname == "redd.it" or hostname.endswith(".reddit.com") or hostname == "reddit.com":
+        return "reddit.com"
+
+    for prefix in ("www.", "old.", "new.", "mobile.", "m."):
+        if hostname.startswith(prefix):
+            hostname = hostname[len(prefix):]
+            break
+    return hostname or url.strip().lower()
+
+
+def wait_for_url_cooldown(url: str, now_fn=time.monotonic, sleep_fn=time.sleep, before_sleep_fn=None) -> float:
+    """同じサイトへの処理開始間隔をURL_COOLDOWN_SECONDS以上にする。"""
+    key = _url_cooldown_key(url)
+    slept = 0.0
+
+    while True:
+        with _url_cooldown_lock:
+            now = now_fn()
+            last_started_at = _url_last_processed_at.get(key)
+            if last_started_at is None:
+                _url_last_processed_at[key] = now
+                return slept
+
+            wait_seconds = URL_COOLDOWN_SECONDS - (now - last_started_at)
+            if wait_seconds <= 0:
+                _url_last_processed_at[key] = now
+                return slept
+
+        if before_sleep_fn:
+            before_sleep_fn(wait_seconds)
+        sleep_fn(wait_seconds)
+        slept += wait_seconds
+
+
 # 同一メッセージ内で既に取得済みのXポストIDを追跡（重複登録防止）
 # key: message_id, value: set of post IDs
 _message_processed_x_ids = {}
@@ -141,17 +203,21 @@ async def on_message(message):
     if not urls:
         return  # URLが見つからない場合は何もしない
         
-    for url in urls:
+    for raw_url in urls:
         try:
+            url = normalize_registration_url(raw_url)
             log_url_event(
                 UrlEvent.DETECTED,
-                raw_url=url,
+                raw_url=raw_url,
                 url=url,
                 channel_id=message.channel.id,
                 message_id=message.id,
             )
             # 処理開始メッセージ
-            response = await message.channel.send(f"URL `{url}` を検出しました。処理を開始します...")
+            if url != raw_url:
+                response = await message.channel.send(f"URL `{raw_url}` を検出しました。登録URLを `{url}` に正規化して処理を開始します...")
+            else:
+                response = await message.channel.send(f"URL `{url}` を検出しました。処理を開始します...")
             
             # バックグラウンド処理のためにキューに追加
             task_queue.put({
@@ -163,8 +229,15 @@ async def on_message(message):
             })
             
         except Exception as e:
-            log_url_event(UrlEvent.ENQUEUE_FAILED, raw_url=url, url=url, channel_id=message.channel.id, message_id=message.id, error=e)
-            await message.channel.send(format_url_error_message("URL受付中にエラーが発生しました", url, e))
+            log_url_event(
+                UrlEvent.ENQUEUE_FAILED,
+                raw_url=raw_url,
+                url=raw_url,
+                channel_id=message.channel.id,
+                message_id=message.id,
+                error=e,
+            )
+            await message.channel.send(format_url_error_message("URL受付中にエラーが発生しました", raw_url, e))
 
 # Discord チャンネルにメッセージを送信するヘルパー関数
 def send_discord_message(channel_id, message):
@@ -181,17 +254,30 @@ def send_discord_message(channel_id, message):
 def process_register_task(task):
     """URLを取得してNotionに登録するタスク処理"""
     channel_id = task['channel_id']
-    url = task['url']
+    url = normalize_registration_url(task['url'])
     tags = task.get('tags')  # タグは省略可能
-    log_url_event(UrlEvent.PROCESSING_STARTED, url=url, channel_id=channel_id, message_id=task.get('message_id'))
+
+    log_url_event(
+        UrlEvent.PROCESSING_STARTED,
+        url=url,
+        channel_id=channel_id,
+        message_id=task.get('message_id'),
+    )
 
     try:
+        def notify_cooldown(wait_seconds):
+            send_discord_message(
+                channel_id,
+                f"同じサイトへの連続アクセスを避けるため、約{wait_seconds:.0f}秒後に処理します。"
+            )
+
         # YouTube URLかどうかチェック
         if is_youtube_url(url):
             send_discord_message(channel_id, "YouTube動画を検出しました。記事生成はChrome拡張を使ってください。")
             log_url_event(UrlEvent.SKIPPED_YOUTUBE, url=url, channel_id=channel_id, message_id=task.get('message_id'))
             return
         elif is_x_article_url(url):
+            waited = wait_for_url_cooldown(url, before_sleep_fn=notify_cooldown)
             # X/Twitter記事（Article）の処理
             send_discord_message(channel_id, "X/Twitterの記事（Article）を取得しています...")
             title, content = fetch_x_article(url)
@@ -207,6 +293,7 @@ def process_register_task(task):
                     return
 
             # X/Twitterポストの処理
+            waited = wait_for_url_cooldown(url, before_sleep_fn=notify_cooldown)
             send_discord_message(channel_id, "X/Twitterのポストを取得しています...")
             title, content, collected_ids = fetch_x_post(url)
 
@@ -217,6 +304,7 @@ def process_register_task(task):
                 _message_processed_x_ids[msg_id].update(collected_ids)
         else:
             # 通常のWebページの処理
+            waited = wait_for_url_cooldown(url, before_sleep_fn=notify_cooldown)
             status_msg = f"サイトのコンテンツを取得しています..."
             send_discord_message(channel_id, status_msg)
             # サイトのタイトルとコンテンツを取得
@@ -287,12 +375,24 @@ def process_register_task(task):
             tb = traceback.extract_tb(e.__traceback__)
             if tb:
                 filename, lineno, _, _ = tb[-1]
-                error_message = format_url_error_message("処理中にエラーが発生しました", url, e, location=f"{filename}:{lineno}")
+                location = f"{filename}:{lineno}"
+                error_message = format_url_error_message(
+                    "処理中にエラーが発生しました",
+                    url,
+                    e,
+                    location=location,
+                )
             else:
                 error_message = format_url_error_message("処理中にエラーが発生しました", url, e)
         except Exception:
             error_message = format_url_error_message("処理中にエラーが発生しました", url, e)
-        log_url_event(UrlEvent.PROCESSING_FAILED, url=url, channel_id=channel_id, message_id=task.get('message_id'), error=e)
+        log_url_event(
+            UrlEvent.PROCESSING_FAILED,
+            url=url,
+            channel_id=channel_id,
+            message_id=task.get('message_id'),
+            error=e,
+        )
         traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
         send_discord_message(channel_id, error_message)
 
@@ -323,12 +423,9 @@ def process_task_queue():
             time.sleep(5)
 
 if __name__ == "__main__":
-    # 必要なライブラリのインポート
-    import time
-    
     print("Discord Bot を起動中...")
     print(f"監視対象チャンネル: {WATCH_CHANNEL_IDS if WATCH_CHANNEL_IDS else '未設定'}")
-    
+
     # バックグラウンド処理スレッドの起動
     background_thread = threading.Thread(target=process_task_queue, daemon=True)
     background_thread.start()

@@ -8,7 +8,7 @@ from tag_predictor import load_tags_from_file, predict_tags
 
 # Notion API設定
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID", "bb656c8f12024b45afae5bb2ad03578d")
+NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
 
 
 def init_notion_client():
@@ -17,6 +17,27 @@ def init_notion_client():
         raise ValueError("NOTION_TOKENが設定されていません。環境変数を確認してください。")
 
     return Client(auth=NOTION_TOKEN)
+
+
+def find_existing_page_by_url(notion: Client, url: str):
+    """URLプロパティが一致する既存ページを探す。
+
+    重複登録を避けるため、検索に失敗した場合は安全側に倒して例外を投げる。
+    """
+    if not url:
+        return None
+    response = notion.databases.query(
+        database_id=NOTION_DATABASE_ID,
+        filter={
+            "property": "URL",
+            "url": {
+                "equals": url
+            }
+        },
+        page_size=1,
+    )
+    results = response.get("results", [])
+    return results[0] if results else None
 
 
 def register_notion_table(content: str, url: str, title: str, tags: Optional[List[str]] = None):
@@ -38,6 +59,11 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
     # クライアント初期化
     notion = init_notion_client()
 
+    existing_page = find_existing_page_by_url(notion, url)
+    if existing_page:
+        print(f"同じURLのNotionページが既に存在するためスキップします: {url}")
+        return existing_page
+
     # タグが指定されていない場合は自動予測
     if tags is None:
         # 利用可能なタグをファイルから読み込み
@@ -53,6 +79,8 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
 
     # タイトルから改行を除去
     title = re.sub(r'[\r\n]+', ' ', title).strip()
+
+    page_id = None
 
     # まずページ基本情報を作成する
     try:
@@ -431,6 +459,12 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
 
         return new_page
     except Exception as e:
+        if page_id:
+            try:
+                notion.pages.update(page_id=page_id, archived=True)
+                print(f"本文追加に失敗したため作成済みページをアーカイブしました: {page_id}")
+            except Exception as archive_error:
+                print(f"作成済みページのアーカイブにも失敗しました: {archive_error}")
         print(f"Notionページの作成に失敗しました: {e}")
         raise
 

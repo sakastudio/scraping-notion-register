@@ -3,9 +3,11 @@ import json
 import ipaddress
 import re
 import socket
+import subprocess
 import threading
 import time
-from urllib.parse import urljoin, urlparse, urlunsplit
+import xml.etree.ElementTree as ET
+from urllib.parse import urljoin, urlparse, urlunparse, urlunsplit
 
 import requests
 import urllib3
@@ -19,9 +21,15 @@ load_dotenv()
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY")
 
 
+MAX_REDDIT_RSS_BYTES = 2 * 1024 * 1024
+REDDIT_REQUEST_TIMEOUT_SECONDS = 15
 MAX_DIRECT_HTML_BYTES = 5 * 1024 * 1024
 DIRECT_REQUEST_TIMEOUT_SECONDS = 20
 MAX_DIRECT_REDIRECTS = 5
+MAX_SPEAKERDECK_HTML_BYTES = 10 * 1024 * 1024
+MAX_SPEAKERDECK_SLIDES = 300
+SPEAKERDECK_REQUEST_TIMEOUT_SECONDS = 30
+SPEAKERDECK_USER_AGENT = "Mozilla/5.0 (compatible; scraping-notion-register/1.0)"
 
 
 def _resolve_public_ip(url: str, timeout_seconds: float = 5) -> str:
@@ -167,6 +175,315 @@ def fetch_public_html_to_markdown(url: str):
     raise RuntimeError(f"直接取得に失敗しました: {url}")
 
 
+def is_reddit_url(url: str) -> bool:
+    """Reddit投稿URLかどうかを判定する。
+
+    subreddit一覧・user/searchページは通常スクレイピングへ流すため対象外にする。
+    """
+    try:
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or "").lower()
+        path = parsed.path.rstrip("/")
+        if hostname in {"reddit.com", "www.reddit.com", "old.reddit.com", "new.reddit.com"}:
+            return re.match(r"^/r/[^/]+/comments/[A-Za-z0-9_]+(?:/.*)?$", path) is not None
+        if hostname == "redd.it":
+            return re.match(r"^/[A-Za-z0-9_]+$", path) is not None
+        return False
+    except Exception:
+        return False
+
+
+def _to_old_reddit_thread_url(url: str) -> str:
+    """Reddit投稿URLを old.reddit.com のクエリなし投稿URLに正規化する。"""
+    parsed = urlparse(url)
+    hostname = (parsed.hostname or "").lower()
+    path = parsed.path
+    path = re.sub(r"/(\.json|\.rss)$", "/", path)
+    if hostname == "redd.it":
+        post_id = path.strip("/")
+        path = f"/comments/{post_id}/"
+    if not path.endswith("/"):
+        path += "/"
+    return urlunparse(("https", "old.reddit.com", path, "", "", ""))
+
+
+def _ensure_reddit_response_size(rss_text: str, rss_url: str) -> None:
+    if len(rss_text.encode("utf-8", errors="ignore")) > MAX_REDDIT_RSS_BYTES:
+        raise ValueError(f"Reddit RSSが大きすぎます: {rss_url}")
+
+
+def _fetch_reddit_rss_with_requests(rss_url: str, headers: dict) -> str:
+    """requests fallbackでも全量読み込み前にサイズ上限を適用する。"""
+    chunks = []
+    total = 0
+    with requests.get(
+        rss_url,
+        headers=headers,
+        timeout=REDDIT_REQUEST_TIMEOUT_SECONDS,
+        stream=True,
+        allow_redirects=True,
+    ) as response:
+        response.raise_for_status()
+        for chunk in response.iter_content(chunk_size=64 * 1024, decode_unicode=False):
+            if not chunk:
+                continue
+            total += len(chunk)
+            if total > MAX_REDDIT_RSS_BYTES:
+                raise ValueError(f"Reddit RSSが大きすぎます: {rss_url}")
+            chunks.append(chunk)
+        encoding = response.encoding or "utf-8"
+    return b"".join(chunks).decode(encoding, errors="replace")
+
+
+def fetch_reddit_thread_to_markdown(url: str):
+    """old.reddit.com のRSSからReddit投稿本文をMarkdownとして取得する。
+
+    old.reddit.com の通常HTML/JSONはこの実行環境から403になることがあるが、
+    投稿URL末尾の .rss は本文（selftext）を取得できるためこちらを使う。
+    """
+    old_url = _to_old_reddit_thread_url(url)
+    rss_url = old_url + ".rss"
+    headers = {
+        "User-Agent": "python:com.sakastudio.scraping-notion-register:v0.1 (by /u/sakastudio)",
+        "Accept": "application/atom+xml, application/rss+xml, text/xml;q=0.9, */*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    try:
+        completed = subprocess.run(
+            [
+                "curl",
+                "-sS",
+                "--fail",
+                "--location",
+                "--max-time",
+                str(REDDIT_REQUEST_TIMEOUT_SECONDS),
+                "--max-filesize",
+                str(MAX_REDDIT_RSS_BYTES),
+                "--compressed",
+                "-H",
+                f"User-Agent: {headers['User-Agent']}",
+                "-H",
+                f"Accept: {headers['Accept']}",
+                "-H",
+                f"Accept-Language: {headers['Accept-Language']}",
+                rss_url,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=REDDIT_REQUEST_TIMEOUT_SECONDS,
+        )
+        if completed.returncode != 0 or not completed.stdout.strip():
+            raise RuntimeError(completed.stderr.strip() or f"curl exited with {completed.returncode}")
+        rss_text = completed.stdout
+        _ensure_reddit_response_size(rss_text, rss_url)
+    except Exception:
+        rss_text = _fetch_reddit_rss_with_requests(rss_url, headers)
+
+    root = ET.fromstring(rss_text)
+    ns = {"atom": "http://www.w3.org/2005/Atom"}
+    entries = root.findall("atom:entry", ns)
+    if not entries:
+        raise ValueError(f"Reddit RSSにentryが見つかりません: {rss_url}")
+
+    first_entry = entries[0]
+    title = first_entry.findtext("atom:title", default="", namespaces=ns).strip() or old_url
+    html_content = first_entry.findtext("atom:content", default="", namespaces=ns)
+    if not html_content.strip():
+        raise ValueError(f"Reddit RSSに本文が見つかりません: {rss_url}")
+
+    soup = BeautifulSoup(html_content, "html.parser")
+    content_root = soup.select_one("div.md") or soup
+    markdown_content = md(str(content_root), heading_style="ATX", bullets="-").strip()
+    markdown_content = re.sub(r"\n{3,}", "\n\n", markdown_content)
+    return (title, markdown_content)
+
+
+def is_speakerdeck_url(url: str) -> bool:
+    """Speaker Deckの公開デッキURLかどうかを厳密に判定する。"""
+    try:
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or "").lower().rstrip(".")
+        if (
+            parsed.scheme != "https"
+            or hostname not in {"speakerdeck.com", "www.speakerdeck.com"}
+            or parsed.username
+            or parsed.password
+        ):
+            return False
+        segments = [segment for segment in parsed.path.split("/") if segment]
+        return len(segments) == 2 and segments[0].lower() not in {
+            "player", "search", "features", "about", "pro", "c", "p", "s"
+        }
+    except Exception:
+        return False
+
+
+def _is_speakerdeck_player_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or "").lower().rstrip(".")
+        return (
+            parsed.scheme == "https"
+            and hostname == "speakerdeck.com"
+            and parsed.username is None
+            and parsed.password is None
+            and re.fullmatch(r"/player/[0-9a-fA-F]{32}", parsed.path) is not None
+        )
+    except Exception:
+        return False
+
+
+def _is_speakerdeck_image_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        hostname = (parsed.hostname or "").lower().rstrip(".")
+        return (
+            parsed.scheme == "https"
+            and hostname == "files.speakerdeck.com"
+            and parsed.username is None
+            and parsed.password is None
+            and re.fullmatch(
+                r"/presentations/[0-9a-fA-F]{32}/slide_\d+\.(?:jpg|jpeg|png|webp)",
+                parsed.path,
+                flags=re.IGNORECASE,
+            ) is not None
+        )
+    except Exception:
+        return False
+
+
+def _speakerdeck_presentation_json(page_soup: BeautifulSoup) -> dict:
+    for node in page_soup.select('script[type="application/ld+json"]'):
+        try:
+            candidate = json.loads(node.string or node.get_text())
+        except (TypeError, json.JSONDecodeError):
+            continue
+        candidates = candidate if isinstance(candidate, list) else [candidate]
+        for item in candidates:
+            if isinstance(item, dict) and item.get("@type") == "PresentationDigitalDocument":
+                return item
+    raise ValueError("Speaker Deckの構造化データが見つかりません")
+
+
+def _escape_speakerdeck_text_for_markdown(text: str) -> str:
+    """抽出テキストを本文として保持し、Markdownブロックへの再解釈を防ぐ。"""
+    lines = text.splitlines() or [text]
+    block_syntax = re.compile(r"^(\s*)(?=(?:#{1,6}\s|```|!\[|[-*+]\s|>\s?|\d+\.\s))")
+    return "\n".join(block_syntax.sub(r"\1\\", line) for line in lines)
+
+
+def parse_speakerdeck_html(url: str, page_html: str | bytes, player_html: str | bytes):
+    """公開ページとplayer HTMLから全スライドの画像・検索用文字列をMarkdown化する。"""
+    page_soup = BeautifulSoup(page_html, "html.parser")
+    player_soup = BeautifulSoup(player_html, "html.parser")
+    presentation = _speakerdeck_presentation_json(page_soup)
+    title = str(presentation.get("name") or "").strip() or url
+
+    text_by_position = {}
+    for part in presentation.get("hasPart") or []:
+        if not isinstance(part, dict):
+            continue
+        try:
+            position = int(part.get("position"))
+        except (TypeError, ValueError):
+            continue
+        if position in text_by_position:
+            raise ValueError(f"Speaker Deckのpositionが重複しています: {position}")
+        text_by_position[position] = str(part.get("text") or "").replace("\f", "").strip()
+
+    slide_nodes = player_soup.select(".js-sd-slide[data-url]")
+    if not slide_nodes:
+        raise ValueError(f"Speaker Deck playerにスライドが見つかりません: {url}")
+    if len(slide_nodes) > MAX_SPEAKERDECK_SLIDES:
+        raise ValueError(f"Speaker Deckのスライド数が上限を超えています: {len(slide_nodes)}")
+    if text_by_position:
+        expected_positions = set(range(1, len(slide_nodes) + 1))
+        if set(text_by_position) != expected_positions:
+            raise ValueError(
+                f"Speaker Deckのpositionが連続していません: "
+                f"expected=1..{len(slide_nodes)} actual={sorted(text_by_position)}"
+            )
+
+    markdown_parts = [f"**Speaker Deck URL**: {url}", "", "# スライド"]
+    extracted_text_count = 0
+    for index, node in enumerate(slide_nodes):
+        position = index + 1
+        image_url = str(node.get("data-url") or "").strip()
+        if not _is_speakerdeck_image_url(image_url):
+            raise ValueError(f"Speaker Deckのスライド画像URLが不正です: slide={position}")
+
+        text_node = node.select_one(".sd-player-slides--text")
+        player_text = text_node.get_text("\n", strip=True) if text_node else ""
+        slide_text = text_by_position.get(position) or player_text.strip()
+        if slide_text:
+            extracted_text_count += 1
+            slide_text = _escape_speakerdeck_text_for_markdown(slide_text)
+
+        markdown_parts.extend([
+            "",
+            f"## Slide {position}",
+            "",
+            f"![Slide {position}]({image_url})",
+            "",
+            f"### Slide {position} text",
+            "",
+            slide_text or "（文字列を抽出できませんでした）",
+        ])
+
+    if extracted_text_count == 0:
+        raise ValueError(f"Speaker Deckのスライド文字列を取得できませんでした: {url}")
+    return title, "\n".join(markdown_parts).strip()
+
+
+def _fetch_speakerdeck_html(url: str, *, referer: str | None = None) -> str:
+    """許可済みSpeaker Deckホストからサイズ制限付きでHTMLを取得する。"""
+    headers = {
+        "User-Agent": SPEAKERDECK_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1",
+    }
+    if referer:
+        headers["Referer"] = referer
+    with requests.get(
+        url,
+        headers=headers,
+        timeout=SPEAKERDECK_REQUEST_TIMEOUT_SECONDS,
+        stream=True,
+        allow_redirects=False,
+    ) as response:
+        response.raise_for_status()
+        content_type = response.headers.get("Content-Type", "").lower()
+        if content_type.split(";", 1)[0].strip() not in {"text/html", "application/xhtml+xml"}:
+            raise ValueError(f"Speaker Deck取得先がHTMLではありません: {url}")
+        chunks = []
+        total = 0
+        for chunk in response.iter_content(chunk_size=64 * 1024):
+            if not chunk:
+                continue
+            total += len(chunk)
+            if total > MAX_SPEAKERDECK_HTML_BYTES:
+                raise ValueError(f"Speaker Deck HTMLが大きすぎます: {url}")
+            chunks.append(chunk)
+        encoding = response.encoding or "utf-8"
+    return b"".join(chunks).decode(encoding, errors="replace")
+
+
+def fetch_speakerdeck_to_markdown(url: str):
+    """Speaker Deck公開デッキの全画像と全スライド文字列を取得する。"""
+    if not is_speakerdeck_url(url):
+        raise ValueError(f"Speaker Deckの公開デッキURLではありません: {url}")
+    parsed = urlparse(url)
+    canonical_url = urlunparse(("https", "speakerdeck.com", parsed.path, "", "", ""))
+    page_html = _fetch_speakerdeck_html(canonical_url)
+    page_soup = BeautifulSoup(page_html, "html.parser")
+    embed = page_soup.select_one(".speakerdeck-embed[data-id]")
+    presentation_id = str(embed.get("data-id") or "").strip() if isinstance(embed, Tag) else ""
+    player_url = f"https://speakerdeck.com/player/{presentation_id}"
+    if not _is_speakerdeck_player_url(player_url):
+        raise ValueError(f"Speaker Deck player URLを取得できませんでした: {url}")
+    player_html = _fetch_speakerdeck_html(player_url, referer=canonical_url)
+    return parse_speakerdeck_html(canonical_url, page_html, player_html)
+
 
 def fetch_and_convert_to_markdown(
         url: str ,
@@ -183,6 +500,19 @@ def fetch_and_convert_to_markdown(
     戻り値:
         tuple: (タイトル, 変換されたマークダウンコンテンツ)のタプル
     """
+    if is_speakerdeck_url(url):
+        return fetch_speakerdeck_to_markdown(url)
+
+    if is_reddit_url(url):
+        try:
+            return fetch_reddit_thread_to_markdown(url)
+        except Exception as reddit_error:
+            # Reddit RSSは429/403や形式変更で不安定になり得るため、既存のFirecrawl経路へ戻す。
+            # FIRECRAWL_API_KEYが無い場合は元のRedditエラーをそのまま通知する。
+            if not FIRECRAWL_API_KEY:
+                raise reddit_error
+            print(f"Reddit RSS取得に失敗したためFirecrawlへフォールバックします: {reddit_error}")
+
     # ★ 追加: APIキー未設定の明示的な検出
     if not FIRECRAWL_API_KEY:
         raise EnvironmentError("FIRECRAWL_API_KEY が設定されていません。環境変数を確認してください。")
