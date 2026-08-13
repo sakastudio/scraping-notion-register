@@ -5,12 +5,14 @@ import html
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 import requests
 import yt_dlp
+from bs4 import BeautifulSoup
 try:
     from youtube_transcript_api import YouTubeTranscriptApi
 except ImportError:
@@ -20,6 +22,13 @@ _VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}
 _SHORT_HOSTS = {"youtu.be", "www.youtu.be"}
 MAX_TRANSCRIPT_CHARS = 100_000
+MIN_DOM_TRANSCRIPT_CHARS = 20
+DOM_INTERACTION_STARTUP_TIMEOUT_SECONDS = 45
+DOM_NAVIGATION_TIMEOUT_MS = 20_000
+DOM_SEGMENT_POLL_INTERVAL_MS = 200
+DOM_SEGMENT_STABLE_SAMPLES = 2
+DOM_USER_AGENT = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 
 
 def extract_video_id(url: str) -> Optional[str]:
@@ -131,6 +140,200 @@ def parse_srt_subtitle(content: str) -> str:
     return parse_vtt_subtitle(content)
 
 
+def _clean_dom_segment(segment) -> str:
+    # The 2026 transcript DOM has timestamp and accessibility-duration siblings
+    # beside one explicitly marked attributed caption span. Prefer that precise
+    # node so other segment controls cannot leak into the transcript.
+    modern_caption = segment.select_one(
+        'span.ytAttributedStringHost[role="text"]'
+    )
+    if modern_caption is not None:
+        text = modern_caption.get_text(separator="\n", strip=True)
+        return "\n".join(line.strip() for line in text.splitlines() if line.strip())
+
+    for node in segment.select(
+        ".segment-timestamp, .timestamp, [class*='timestamp'], "
+        "[aria-label$='秒'], [aria-label*=' 分'], [aria-label*='時間']"
+    ):
+        node.decompose()
+    preferred = segment.select_one(
+        ".segment-text, yt-formatted-string.segment-text, "
+        "yt-formatted-string:not(.segment-timestamp)"
+    )
+    text = (preferred or segment).get_text(separator="\n", strip=True)
+    # Modern accessibility text can be concatenated as "0:000 秒Text".
+    text = re.sub(r"^\s*\d{1,3}:\d{2}(?:\d+\s*(?:時間|分|秒))?\s*", "", text)
+    return "\n".join(line.strip() for line in text.splitlines() if line.strip())
+
+
+def _extract_dom_transcript_html(content: str) -> str:
+    """Parse only transcript segments from bounded panel HTML."""
+    soup = BeautifulSoup(content or "", "html.parser")
+    panel = soup.select_one('[target-id="PAmodern_transcript_view"]')
+    segments = panel.select("transcript-segment-view-model") if panel else []
+    segments = segments or soup.select("ytd-transcript-segment-renderer")
+    if not segments and panel is None:
+        segments = soup.select("transcript-segment-view-model")
+    transcript = "\n".join(filter(None, (_clean_dom_segment(node) for node in segments))).strip()
+    if len(transcript) < MIN_DOM_TRANSCRIPT_CHARS:
+        raise RuntimeError("DOM字幕が空または短すぎます")
+    if len(transcript) > MAX_TRANSCRIPT_CHARS:
+        raise RuntimeError("DOM字幕が処理上限を超えています")
+    return transcript
+
+
+def _deadline_timeout_ms(deadline: float, cap: int, clock=time.monotonic) -> int:
+    """Return a bounded Playwright timeout without hiding deadline expiry."""
+    remaining = int((deadline - clock()) * 1000)
+    if remaining <= 0:
+        raise RuntimeError("DOM字幕取得が時間切れです")
+    return min(cap, remaining)
+
+
+def _wait_visible_and_click(locator, deadline: float, wait_cap: int, click_cap: int, clock=time.monotonic) -> None:
+    """Dynamically acquire a control within the shared interaction deadline."""
+    locator.wait_for(
+        state="visible", timeout=_deadline_timeout_ms(deadline, wait_cap, clock))
+    locator.click(timeout=_deadline_timeout_ms(deadline, click_cap, clock))
+
+
+def _prepare_dom_transcript_page(page, deadline: float, clock=time.monotonic) -> bool:
+    """Wait for the watch UI, expand its description, and open transcript UI."""
+    page.locator("h1.ytd-watch-metadata").first.wait_for(
+        state="visible", timeout=_deadline_timeout_ms(deadline, 8_000, clock))
+
+    for selector in (
+        "ytd-text-inline-expander #expand",
+        "ytd-watch-metadata ytd-text-inline-expander #expand",
+        "ytd-watch-metadata #description-inline-expander",
+        "ytd-watch-metadata #description #expand",
+        "ytd-watch-metadata tp-yt-paper-button#expand",
+    ):
+        try:
+            _wait_visible_and_click(
+                page.locator(selector).first, deadline, 1_250, 2_000, clock)
+            break
+        except Exception:
+            _deadline_timeout_ms(deadline, 1, clock)
+            continue
+
+    for selector in (
+        "ytd-video-description-transcript-section-renderer button",
+        "ytd-video-description-transcript-section-renderer tp-yt-paper-button",
+    ):
+        try:
+            _wait_visible_and_click(
+                page.locator(selector).first, deadline, 1_500, 2_500, clock)
+            return True
+        except Exception:
+            _deadline_timeout_ms(deadline, 1, clock)
+            continue
+
+    for name in (re.compile("文字起こしを表示"), re.compile("Show transcript", re.I)):
+        try:
+            _wait_visible_and_click(
+                page.get_by_role("button", name=name).first,
+                deadline, 1_500, 2_500, clock)
+            return True
+        except Exception:
+            _deadline_timeout_ms(deadline, 1, clock)
+            continue
+    return False
+
+
+def _should_block_dom_resource(resource_type: str) -> bool:
+    """Block only heavy resources that are unnecessary for transcript controls."""
+    return resource_type in {"media", "image", "font"}
+
+
+def _route_dom_resource(route) -> None:
+    if _should_block_dom_resource(route.request.resource_type):
+        route.abort()
+    else:
+        route.continue_()
+
+
+def _capture_stable_panel_html(
+    page, panel, segment_selector: str, interaction_deadline: float,
+    clock=time.monotonic,
+) -> str:
+    """Capture after segment count and tail content stabilize, never after only one segment."""
+    segments = panel.locator(segment_selector)
+    previous_sample = None
+    stable_samples = 0
+    while True:
+        try:
+            count = segments.count()
+            tail = segments.last.inner_text(
+                timeout=_deadline_timeout_ms(interaction_deadline, 2_000, clock)) if count else ""
+        except Exception:
+            _deadline_timeout_ms(interaction_deadline, 1, clock)
+            count, tail = 0, ""
+        sample = (count, tail)
+        if count > 0 and sample == previous_sample:
+            stable_samples += 1
+            if stable_samples >= DOM_SEGMENT_STABLE_SAMPLES:
+                return panel.inner_html(
+                    timeout=_deadline_timeout_ms(interaction_deadline, 5_000, clock))
+        else:
+            stable_samples = 0
+        previous_sample = sample
+        page.wait_for_timeout(
+            _deadline_timeout_ms(
+                interaction_deadline, DOM_SEGMENT_POLL_INTERVAL_MS, clock))
+
+
+def _run_dom_browser(playwright, canonical: str, interaction_deadline: float, clock=time.monotonic) -> str:
+    """Run startup/interactions under a deadline; shutdown remains graceful in finally."""
+    def remaining_ms(cap: int) -> int:
+        return _deadline_timeout_ms(interaction_deadline, cap, clock)
+
+    browser = playwright.chromium.launch(
+        headless=True, timeout=remaining_ms(DOM_NAVIGATION_TIMEOUT_MS))
+    try:
+        context = browser.new_context(locale="ja-JP", user_agent=DOM_USER_AGENT)
+        context.route("**/*", _route_dom_resource)
+        page = context.new_page()
+        page.set_default_navigation_timeout(DOM_NAVIGATION_TIMEOUT_MS)
+        page.set_default_timeout(5_000)
+        page.goto(
+            canonical, wait_until="domcontentloaded",
+            timeout=remaining_ms(DOM_NAVIGATION_TIMEOUT_MS))
+        if not _prepare_dom_transcript_page(page, interaction_deadline, clock):
+            raise RuntimeError("字幕パネルを開けませんでした")
+        panel = page.locator('[target-id="PAmodern_transcript_view"]').first
+        segment_selector = "transcript-segment-view-model"
+        try:
+            panel.locator(segment_selector).first.wait_for(
+                state="attached", timeout=remaining_ms(8_000))
+        except Exception:
+            remaining_ms(1)
+            panel = page.locator("ytd-transcript-renderer").first
+            segment_selector = "ytd-transcript-segment-renderer"
+            panel.locator(segment_selector).first.wait_for(
+                state="attached", timeout=remaining_ms(8_000))
+        content = _capture_stable_panel_html(
+            page, panel, segment_selector, interaction_deadline, clock)
+        return _extract_dom_transcript_html(content)
+    finally:
+        browser.close()
+
+
+def _dom_transcript(canonical: str) -> str:
+    """Acquire transcript with a fresh, unauthenticated headless browser."""
+    if canonical != canonical_youtube_url(canonical):
+        raise ValueError("DOM字幕取得にはcanonical URLが必要です")
+    try:  # delayed: successful normal paths do not import Playwright
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError("Playwrightが利用できません") from exc
+    # This deadline bounds browser startup and all transcript interactions. Browser
+    # shutdown is deliberately graceful (no subprocess hard-kill) in _run_dom_browser.
+    interaction_deadline = time.monotonic() + DOM_INTERACTION_STARTUP_TIMEOUT_SECONDS
+    with sync_playwright() as playwright:
+        return _run_dom_browser(playwright, canonical, interaction_deadline)
+
+
 def download_and_parse_subtitle(subtitle_url: str, format_type: str = "json3") -> Optional[str]:
     response = requests.get(subtitle_url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
     response.raise_for_status()
@@ -175,17 +378,26 @@ def fetch_youtube_info(url: str, cookies_file: Optional[str] = None, send_messag
             info = _watch_page_metadata(canonical)
         selected = select_preferred_subtitle(info.get("subtitles") or {}, info.get("automatic_captions") or {})
         transcript = None
+        transcript_source = None
         if selected:
             subtitle, language, is_auto = selected
             try:
                 transcript = download_and_parse_subtitle(subtitle["url"], subtitle.get("ext", "json3"))
+                if transcript:
+                    transcript_source = "caption_download"
             except Exception:
                 transcript = None
         if not transcript:
             video_id = extract_video_id(canonical)
             if not video_id:
                 raise RuntimeError("動画IDがありません")
-            transcript, language, is_auto = _public_transcript(video_id)
+            try:
+                transcript, language, is_auto = _public_transcript(video_id)
+                transcript_source = "youtube_transcript_api"
+            except Exception:
+                transcript = _dom_transcript(canonical)
+                language, is_auto = "und", "unknown"
+                transcript_source = "youtube_dom"
         if not transcript:
             raise RuntimeError("字幕データが空でした")
         if len(transcript) > MAX_TRANSCRIPT_CHARS:
@@ -198,6 +410,7 @@ def fetch_youtube_info(url: str, cookies_file: Optional[str] = None, send_messag
             "categories": info.get("categories") or [], "thumbnail": info.get("thumbnail", ""),
             "video_id": extract_video_id(canonical), "url": canonical,
             "transcript_language": language, "transcript_is_auto": is_auto,
+            "transcript_source": transcript_source,
         }
         return info.get("title") or "", info.get("description") or "", transcript, metadata
     except Exception as exc:

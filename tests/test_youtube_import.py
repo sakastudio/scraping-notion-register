@@ -29,6 +29,189 @@ class YouTubeURLTests(unittest.TestCase):
 
 
 class TranscriptSelectionTests(unittest.TestCase):
+    def test_dom_page_preparation_waits_for_metadata_and_uses_modern_expander(self):
+        events = []
+
+        class Locator:
+            def __init__(self, selector):
+                self.selector = selector
+
+            @property
+            def first(self):
+                return self
+
+            def wait_for(self, **kwargs):
+                events.append(("wait", self.selector, kwargs))
+                if self.selector not in {
+                    "h1.ytd-watch-metadata",
+                    "ytd-text-inline-expander #expand",
+                    "ytd-video-description-transcript-section-renderer button",
+                }:
+                    raise RuntimeError("not available")
+
+            def click(self, **kwargs):
+                events.append(("click", self.selector))
+
+        class Page:
+            def locator(self, selector):
+                return Locator(selector)
+
+            def get_by_role(self, role, name):
+                return Locator(f"role={role}:{name.pattern}")
+
+        self.assertTrue(get_youtube._prepare_dom_transcript_page(Page(), deadline=100.0, clock=lambda: 0.0))
+        waits = [event for event in events if event[0] == "wait"]
+        self.assertTrue(all(event[2]["state"] == "visible" for event in waits))
+        self.assertEqual([8000, 1250, 1500], [event[2]["timeout"] for event in waits])
+        metadata_wait = next(i for i, event in enumerate(events) if event[:2] == ("wait", "h1.ytd-watch-metadata"))
+        expansion_click = events.index(("click", "ytd-text-inline-expander #expand"))
+        transcript_click = events.index(("click", "ytd-video-description-transcript-section-renderer button"))
+        self.assertLess(metadata_wait, expansion_click)
+        self.assertLess(expansion_click, transcript_click)
+
+    def test_dom_page_preparation_selector_errors_still_enforce_deadline(self):
+        now = [0.0]
+
+        class Locator:
+            calls = 0
+
+            @property
+            def first(self):
+                return self
+
+            def wait_for(self, **kwargs):
+                Locator.calls += 1
+                if Locator.calls == 1:
+                    return None
+                now[0] = 2.0
+                raise RuntimeError("detached")
+
+        page = Mock()
+        page.locator.return_value = Locator()
+        with self.assertRaisesRegex(RuntimeError, "時間切れ"):
+            get_youtube._prepare_dom_transcript_page(page, deadline=1.0, clock=lambda: now[0])
+
+    def test_dom_browser_launch_uses_remaining_deadline_and_closes_after_failure(self):
+        browser = Mock()
+        browser.new_context.side_effect = RuntimeError("post-launch failure")
+        playwright = Mock()
+        playwright.chromium.launch.return_value = browser
+
+        with self.assertRaisesRegex(RuntimeError, "post-launch failure"):
+            get_youtube._run_dom_browser(
+                playwright, CANONICAL, interaction_deadline=5.0, clock=lambda: 0.0)
+
+        playwright.chromium.launch.assert_called_once_with(headless=True, timeout=5000)
+        browser.close.assert_called_once_with()
+
+    def test_dom_resource_policy_blocks_only_nonessential_heavy_resources(self):
+        for resource_type in ("media", "image", "font"):
+            self.assertTrue(get_youtube._should_block_dom_resource(resource_type))
+        for resource_type in ("script", "xhr", "fetch", "document", "stylesheet"):
+            self.assertFalse(get_youtube._should_block_dom_resource(resource_type))
+
+    def test_dom_capture_waits_until_progressive_segments_stabilize(self):
+        events = []
+
+        class Segments:
+            def __init__(self):
+                self.counts = iter((1, 3, 3, 3))
+                self.current = 0
+
+            def count(self):
+                self.current = next(self.counts)
+                events.append(("count", self.current))
+                return self.current
+
+            @property
+            def last(self):
+                return self
+
+            def inner_text(self, **kwargs):
+                events.append(("tail", kwargs["timeout"]))
+                return f"last segment {self.current}"
+
+        segments = Segments()
+
+        class Panel:
+            def locator(self, selector):
+                return segments
+
+            def inner_html(self, **kwargs):
+                events.append(("capture", kwargs["timeout"]))
+                return "complete panel"
+
+        class Page:
+            def wait_for_timeout(self, timeout):
+                events.append(("sleep", timeout))
+
+        result = get_youtube._capture_stable_panel_html(
+            Page(), Panel(), "transcript-segment-view-model",
+            interaction_deadline=10.0, clock=lambda: 0.0)
+
+        self.assertEqual("complete panel", result)
+        self.assertEqual([1, 3, 3, 3], [event[1] for event in events if event[0] == "count"])
+        self.assertTrue(all(event[1] == 2000 for event in events if event[0] == "tail"))
+        self.assertEqual(3, len([event for event in events if event[0] == "sleep"]))
+        self.assertEqual("capture", events[-1][0])
+
+    def test_dom_fixture_parser_supports_modern_and_legacy_without_ui_chrome(self):
+        modern = """
+        <div target-id="PAmodern_transcript_view">
+          <h2>文字起こし</h2><input placeholder="文字起こしを検索">
+          <transcript-segment-view-model>
+            <div aria-label="0 秒"><span>0:00</span></div>
+            <span class="segment-text">Hello, welcome.\nSecond line.</span>
+          </transcript-segment-view-model>
+          <transcript-segment-view-model>
+            <span class="timestamp">0:02</span><span aria-label="2 秒">2 秒</span>
+            <span class="segment-text">日本語の字幕です。</span>
+          </transcript-segment-view-model>
+        </div>
+        <div>関連動画 検索欄 見出し</div>
+        """
+        legacy = """
+        <ytd-transcript-renderer><div id="header">文字起こし</div>
+          <ytd-transcript-segment-renderer>
+            <div class="segment-timestamp">1:02</div>
+            <yt-formatted-string class="segment-text">Legacy first\nkeeps newline.</yt-formatted-string>
+          </ytd-transcript-segment-renderer>
+          <ytd-transcript-segment-renderer aria-label="1 分 5 秒">
+            <div class="segment-timestamp">1:05</div><yt-formatted-string>Legacy second.</yt-formatted-string>
+          </ytd-transcript-segment-renderer>
+        </ytd-transcript-renderer>
+        """
+        self.assertEqual("Hello, welcome.\nSecond line.\n日本語の字幕です。", get_youtube._extract_dom_transcript_html(modern))
+        self.assertEqual("Legacy first\nkeeps newline.\nLegacy second.", get_youtube._extract_dom_transcript_html(legacy))
+
+    def test_dom_fixture_parser_prefers_2026_modern_caption_span(self):
+        html = """
+        <div target-id="PAmodern_transcript_view">
+          <transcript-segment-view-model>
+            <div aria-hidden="true" class="ytwTranscriptSegmentViewModelTimestamp ytwTranscriptSegmentViewModelTimestampActive">0:00</div><div class="ytwTranscriptSegmentViewModelTimestampA11yLabel">0 秒</div><span class="ytAttributedStringHost ytAttributedStringLinkInheritColor" role="text">Hello from the current DOM.\nThis caption keeps its second line.</span>
+            <span class="unrelated-control">Unrelated segment control</span>
+          </transcript-segment-view-model>
+        </div>
+        """
+        self.assertEqual(
+            "Hello from the current DOM.\nThis caption keeps its second line.",
+            get_youtube._extract_dom_transcript_html(html),
+        )
+
+    def test_dom_fixture_parser_removes_concatenated_accessibility_duration(self):
+        html = """
+        <div target-id="PAmodern_transcript_view">
+          <transcript-segment-view-model>0:000 秒Hello, welcome to this transcript.</transcript-segment-view-model>
+          <transcript-segment-view-model>0:022 秒Show the next complete sentence here.</transcript-segment-view-model>
+        </div>
+        """
+        self.assertEqual("Hello, welcome to this transcript.\nShow the next complete sentence here.", get_youtube._extract_dom_transcript_html(html))
+
+    def test_dom_fixture_parser_rejects_empty_or_too_short_content(self):
+        for html in ('<div target-id="PAmodern_transcript_view"><h2>文字起こし</h2></div>', '<transcript-segment-view-model>0:00 hi</transcript-segment-view-model>'):
+            with self.assertRaisesRegex(RuntimeError, "字幕"):
+                get_youtube._extract_dom_transcript_html(html)
+
     def test_priority_and_locale_variants(self):
         t = lambda marker: [{"ext":"json3", "url":marker}]
         cases = [
@@ -44,9 +227,32 @@ class TranscriptSelectionTests(unittest.TestCase):
         info={"title":"Target","description":"desc","uploader":"channel","subtitles":{},"automatic_captions":{"ja":[{"ext":"json3","url":"https://captions.invalid/data"}]}}
         response=Mock(text=json.dumps({"events":[{"segs":[{"utf8":"first\n"},{"utf8":"```\n![](https://evil)"}]},{"segs":[{"utf8":"last"}]}]})); response.raise_for_status.return_value=None
         ydl=Mock(); ydl.__enter__=Mock(return_value=ydl); ydl.__exit__=Mock(return_value=False); ydl.extract_info.return_value=info
-        with patch("get_youtube.yt_dlp.YoutubeDL",return_value=ydl) as cls, patch("get_youtube.requests.get",return_value=response):
+        with patch("get_youtube.yt_dlp.YoutubeDL",return_value=ydl) as cls, patch("get_youtube.requests.get",return_value=response), patch("get_youtube._dom_transcript") as dom:
             _,_,transcript,metadata=get_youtube.fetch_youtube_info(CANONICAL)
         self.assertEqual("first\n```\n![](https://evil)last",transcript); self.assertEqual("ja",metadata["transcript_language"]); self.assertNotIn("cookiefile",cls.call_args.args[0])
+        dom.assert_not_called()
+
+    def test_dom_fallback_runs_only_after_download_and_public_api_fail(self):
+        info={"title":"Target","description":"desc","uploader":"channel","subtitles":{"ja":[{"ext":"json3","url":"https://captions.invalid/data"}]},"automatic_captions":{}}
+        with patch("get_youtube._extract_with_ytdlp",return_value=info), \
+             patch("get_youtube.download_and_parse_subtitle",side_effect=RuntimeError("signed secret")), \
+             patch("get_youtube._public_transcript",side_effect=RuntimeError("api secret")), \
+             patch("get_youtube._dom_transcript",return_value="DOM transcript has enough trustworthy fixture text.") as dom:
+            _,_,transcript,metadata=get_youtube.fetch_youtube_info(f"https://youtu.be/{VIDEO_ID}?si=x")
+        dom.assert_called_once_with(CANONICAL)
+        self.assertEqual("DOM transcript has enough trustworthy fixture text.",transcript)
+        self.assertEqual("und",metadata["transcript_language"])
+        self.assertEqual("unknown",metadata["transcript_is_auto"])
+        self.assertEqual("youtube_dom",metadata["transcript_source"])
+
+    def test_all_transcript_paths_fail_with_sanitized_error(self):
+        info={"title":"Target","description":"desc","subtitles":{},"automatic_captions":{}}
+        with patch("get_youtube._extract_with_ytdlp",return_value=info), \
+             patch("get_youtube._public_transcript",side_effect=RuntimeError("API SUPERSECRET")), \
+             patch("get_youtube._dom_transcript",side_effect=RuntimeError("DOM SUPERSECRET")):
+            with self.assertRaises(RuntimeError) as cm:
+                get_youtube.fetch_youtube_info(CANONICAL)
+        self.assertNotIn("SUPERSECRET",str(cm.exception))
 
     def test_public_transcript_priority_includes_locale_variants(self):
         class Transcript:
@@ -166,6 +372,13 @@ class ContentSafetyTests(unittest.TestCase):
         payload=article_generator.build_youtube_notion_content(article="# Article\n## Summary\nbody",transcript="t",url=CANONICAL,metadata={"channel":"chan","upload_date":"20260102","duration":65,"view_count":123,"like_count":4,"transcript_language":"en-US","transcript_is_auto":False})
         fields=["YouTube URL","チャンネル","公開日","動画時間","再生回数","高評価数","字幕言語","# Article"]
         self.assertEqual(sorted(payload.article_markdown.index(x) for x in fields),[payload.article_markdown.index(x) for x in fields])
+
+    def test_dom_unknown_caption_kind_is_not_reported_as_manual(self):
+        payload=article_generator.build_youtube_notion_content(
+            article="# Article\n## Summary\nbody", transcript="transcript", url=CANONICAL,
+            metadata={"transcript_language":"und", "transcript_is_auto":"unknown", "transcript_source":"youtube_dom"})
+        self.assertIn("字幕言語: und（種別不明）", payload.article_markdown)
+        self.assertNotIn("（手動）", payload.article_markdown)
 
 
 class NotionRobustnessTests(unittest.TestCase):

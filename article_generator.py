@@ -212,7 +212,9 @@ def _format_date(value) -> str:
 def build_youtube_notion_content(*, article: str, transcript: str, url: str, metadata: Optional[dict] = None) -> YouTubeNotionContent:
     if not article or not transcript or len(article) > MAX_ARTICLE_CHARS or len(transcript) > MAX_TRANSCRIPT_CHARS:
         raise ArticleGenerationError("記事または字幕が空、または処理上限超過です")
-    m = metadata or {}; kind = "自動生成" if m.get("transcript_is_auto") else "手動"
+    m = metadata or {}
+    auto = m.get("transcript_is_auto")
+    kind = "自動生成" if auto is True else "手動" if auto is False else "種別不明"
     lines = ["## 📹 動画情報", f"YouTube URL: {url}", f"チャンネル: {m.get('channel','')}"]
     for label, value in (("公開日", _format_date(m.get("upload_date"))), ("動画時間", _format_duration(m.get("duration"))),
                          ("再生回数", m.get("view_count")), ("高評価数", m.get("like_count"))):
