@@ -6,7 +6,7 @@ import queue
 import time
 import json
 import sys
-import traceback
+import traceback  # retained for compatibility; sensitive task exceptions are not printed
 from datetime import datetime
 from enum import StrEnum
 from urllib.parse import urlparse
@@ -20,7 +20,7 @@ from get_youtube import fetch_youtube_info, extract_video_id
 from article_generator import process_youtube_for_notion
 from get_x_post import fetch_x_post
 from get_x_article import fetch_x_article, is_x_article_url
-from notion_table import register_notion_table
+from notion_table import register_notion_table, notion_url_exists
 from title_translator import is_non_japanese_title, translate_title
 from url_preprocessor import normalize_registration_url
 
@@ -82,13 +82,17 @@ def format_url_error_message(summary, url, error, *, location=None):
 # YouTube URLの判定関数
 def is_youtube_url(url: str) -> bool:
     """YouTube URLかどうかを判定"""
-    youtube_domains = [
-        'youtube.com',
-        'youtu.be',
-        'www.youtube.com',
-        'm.youtube.com'
-    ]
-    return any(domain in url.lower() for domain in youtube_domains)
+    return extract_video_id(url) is not None
+
+
+def is_official_youtube_host(url: str) -> bool:
+    try:
+        return (urlparse(url).hostname or "").lower().rstrip(".") in {
+            "youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com",
+            "youtu.be", "www.youtu.be",
+        }
+    except Exception:
+        return False
 
 # X/Twitter URLの判定関数
 def is_x_url(url: str) -> bool:
@@ -273,9 +277,31 @@ def process_register_task(task):
 
         # YouTube URLかどうかチェック
         if is_youtube_url(url):
-            send_discord_message(channel_id, "YouTube動画を検出しました。記事生成はChrome拡張を使ってください。")
-            log_url_event(UrlEvent.SKIPPED_YOUTUBE, url=url, channel_id=channel_id, message_id=task.get('message_id'))
-            return
+            # Re-normalize here as defense in depth for manually queued tasks.
+            url = normalize_registration_url(url)
+            if notion_url_exists(url):
+                send_discord_message(channel_id, f"URL `{url}` は既に登録済みのためスキップします。")
+                log_url_event(UrlEvent.SKIPPED_DUPLICATE, url=url, channel_id=channel_id, message_id=task.get('message_id'))
+                return
+            send_discord_message(channel_id, "YouTube動画情報と全文字幕を取得しています...")
+            title, description, transcript, metadata = fetch_youtube_info(
+                url,
+                send_message_func=lambda message: send_discord_message(channel_id, message),
+            )
+            if not title or not transcript or len(transcript) < 100:
+                raise RuntimeError("YouTube動画のタイトルまたは全文字幕が検証要件を満たしません")
+            if not metadata.get("transcript_language") or "transcript_is_auto" not in metadata:
+                raise RuntimeError("YouTube字幕メタデータが不完全です")
+            send_discord_message(channel_id, "ChatGPT認証済みCodexで記事を生成しています...")
+            youtube_content = process_youtube_for_notion(
+                title, description, transcript, url, metadata=metadata,
+            )
+            if not youtube_content.article_markdown or youtube_content.transcript != transcript:
+                raise RuntimeError("YouTube記事または全文字幕の最終検証に失敗しました")
+            content = youtube_content.article_markdown
+            trusted_transcript = youtube_content.transcript
+        elif is_official_youtube_host(url):
+            raise RuntimeError("無効または未対応のYouTube URLです")
         elif is_x_article_url(url):
             waited = wait_for_url_cooldown(url, before_sleep_fn=notify_cooldown)
             # X/Twitter記事（Article）の処理
@@ -333,7 +359,11 @@ def process_register_task(task):
         send_discord_message(channel_id, status_msg)
 
         # Notionテーブルに登録
-        page = register_notion_table(content, url=url, title=title, tags=tags)
+        register_kwargs = {"content": content, "url": url, "title": title, "tags": tags}
+        if is_youtube_url(url):
+            register_kwargs["trusted_transcript"] = trusted_transcript
+            register_kwargs["allow_external_media"] = False
+        page = register_notion_table(**register_kwargs)
 
         # 完了メッセージを送信
         page_url = page.get("url", "不明")
@@ -370,30 +400,16 @@ def process_register_task(task):
         log_url_event(UrlEvent.COMPLETED, url=url, channel_id=channel_id, message_id=task.get('message_id'))
 
     except Exception as e:
-        # 例外箇所とURLを通知・記録
-        try:
-            tb = traceback.extract_tb(e.__traceback__)
-            if tb:
-                filename, lineno, _, _ = tb[-1]
-                location = f"{filename}:{lineno}"
-                error_message = format_url_error_message(
-                    "処理中にエラーが発生しました",
-                    url,
-                    e,
-                    location=location,
-                )
-            else:
-                error_message = format_url_error_message("処理中にエラーが発生しました", url, e)
-        except Exception:
-            error_message = format_url_error_message("処理中にエラーが発生しました", url, e)
+        # Never expose chained extractor/HTTP details; they may contain signed URLs.
+        safe_error = type(e).__name__ if is_official_youtube_host(url) else str(e)
+        error_message = format_url_error_message("処理中にエラーが発生しました", url, safe_error)
         log_url_event(
             UrlEvent.PROCESSING_FAILED,
             url=url,
             channel_id=channel_id,
             message_id=task.get('message_id'),
-            error=e,
+            error=safe_error,
         )
-        traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
         send_discord_message(channel_id, error_message)
 
 

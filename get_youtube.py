@@ -1,367 +1,209 @@
+"""YouTube metadata and complete transcript acquisition."""
+from __future__ import annotations
+
+import html
+import json
+import os
 import re
-import yt_dlp
-import requests
-from typing import Optional, Tuple, Dict, Any, List
-import re
-from typing import Optional, Tuple, Dict, Any, List
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import parse_qs, urlparse
 
 import requests
 import yt_dlp
+try:
+    from youtube_transcript_api import YouTubeTranscriptApi
+except ImportError:
+    YouTubeTranscriptApi = None
+
+_VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}
+_SHORT_HOSTS = {"youtu.be", "www.youtu.be"}
+MAX_TRANSCRIPT_CHARS = 100_000
 
 
 def extract_video_id(url: str) -> Optional[str]:
-    """YouTube URLから動画IDを抽出"""
-    patterns = [
-        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})',
-        r'youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})'
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            return match.group(1)
-    return None
-
-def parse_vtt_subtitle(vtt_content: str) -> str:
-    """VTT形式の字幕をテキストにパース"""
-    lines = vtt_content.split('\n')
-    text_lines = []
-    
-    # VTTヘッダーをスキップ
-    start_index = 0
-    for i, line in enumerate(lines):
-        if 'WEBVTT' in line:
-            start_index = i + 1
-            break
-    
-    # タイムスタンプと設定行をスキップしてテキストのみを抽出
-    i = start_index
-    while i < len(lines):
-        line = lines[i].strip()
-        
-        # タイムスタンプ行をスキップ（00:00:00.000 --> 00:00:05.000 形式）
-        if '-->' in line:
-            i += 1
-            # 次の空行またはタイムスタンプまでのテキストを収集
-            while i < len(lines) and lines[i].strip() and '-->' not in lines[i]:
-                text = lines[i].strip()
-                # HTMLタグを除去（<c>タグなど）
-                text = re.sub(r'<[^>]+>', '', text)
-                # 重複を避ける
-                if text and (not text_lines or text != text_lines[-1]):
-                    text_lines.append(text)
-                i += 1
-        i += 1
-    
-    return ' '.join(text_lines)
-
-def parse_srt_subtitle(srt_content: str) -> str:
-    """SRT形式の字幕をテキストにパース"""
-    lines = srt_content.split('\n')
-    text_lines = []
-    
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        
-        # タイムスタンプ行を検出（00:00:00,000 --> 00:00:05,000 形式）
-        if '-->' in line:
-            i += 1
-            # 次の空行または番号行までのテキストを収集
-            while i < len(lines) and lines[i].strip() and not lines[i].strip().isdigit() and '-->' not in lines[i]:
-                text = lines[i].strip()
-                # HTMLタグを除去
-                text = re.sub(r'<[^>]+>', '', text)
-                # 重複を避ける
-                if text and (not text_lines or text != text_lines[-1]):
-                    text_lines.append(text)
-                i += 1
-        i += 1
-    
-    return ' '.join(text_lines)
-
-def download_and_parse_subtitle(subtitle_url: str, format_type: str = 'vtt') -> Optional[str]:
-    """字幕URLからテキストをダウンロードしてパース"""
-    response = requests.get(subtitle_url, timeout=10)
-    response.raise_for_status()
-    content = response.text
-
-    # フォーマットに応じてパース
-    if format_type == 'vtt' or 'vtt' in subtitle_url:
-        return parse_vtt_subtitle(content)
-    elif format_type == 'srt':
-        return parse_srt_subtitle(content)
-    else:
-        # その他のフォーマットは生テキストとして返す
-        return content
-
-def get_best_subtitle(subtitles_dict: Dict, preferred_langs: List[str] = ['ja', 'en']) -> Optional[Tuple[str, Dict]]:
-    """利用可能な字幕から最適なものを選択"""
-    if not subtitles_dict:
+    """Extract an ID only from an allow-listed, structurally valid YouTube URL."""
+    try:
+        parsed = urlparse(url)
+        host = (parsed.hostname or "").lower().rstrip(".")
+        if parsed.scheme not in {"http", "https"}:
+            return None
+        candidate = None
+        if host in _SHORT_HOSTS:
+            candidate = parsed.path.strip("/").split("/", 1)[0]
+        elif host in _YOUTUBE_HOSTS:
+            if parsed.path.rstrip("/") == "/watch":
+                candidate = parse_qs(parsed.query).get("v", [None])[0]
+            else:
+                parts = parsed.path.strip("/").split("/")
+                if len(parts) == 2 and parts[0] in {"shorts", "embed", "live"}:
+                    candidate = parts[1]
+        return candidate if candidate and _VIDEO_ID_RE.fullmatch(candidate) else None
+    except (TypeError, ValueError):
         return None
-    
-    # 優先言語順に探す
-    for lang in preferred_langs:
-        if lang in subtitles_dict:
-            subtitle_list = subtitles_dict[lang]
-            # vtt形式を優先、次にsrt、その他
-            for fmt_priority in ['vtt', 'srt', 'srv3', 'srv2', 'srv1', 'json3']:
-                for subtitle_info in subtitle_list:
-                    if subtitle_info.get('ext') == fmt_priority:
-                        return lang, subtitle_info
-            
-            # 形式の優先順位で見つからない場合は最初のものを返す
-            if subtitle_list:
-                return lang, subtitle_list[0]
-    
-    # 優先言語がない場合は最初の利用可能な言語を返す
-    for lang, subtitle_list in subtitles_dict.items():
-        if subtitle_list:
-            return lang, subtitle_list[0]
-    
-    return None
 
-def fetch_youtube_info(url: str, cookies_file: str = "youtube_com_cookies.txt", send_message_func=None) -> Tuple[Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
-    """
-    YouTube動画の情報と字幕を取得（yt-dlpのみ使用）
-    
-    引数:
-        url: YouTube動画のURL
-        cookies_file: YouTube認証用のcookiesファイルパス
-    
-    戻り値:
-        tuple: (タイトル, 説明文, 字幕テキスト, メタデータ辞書)
-    """
+
+def canonical_youtube_url(url: str) -> str:
     video_id = extract_video_id(url)
     if not video_id:
-        raise ValueError(f"無効なYouTube URL: {url}")
-    
-    # yt-dlpのオプション設定
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'skip_download': True,
-        'extract_flat': False,
-        'force_generic_extractor': False,
-        # 字幕関連のオプション
-        'writesubtitles': True,  # 手動字幕を取得
-        'writeautomaticsub': True,  # 自動生成字幕を取得
-        'subtitleslangs': ['ja', 'en'],  # 優先言語
-        'extractor_args': {'youtube': {'skip': ['dash', 'hls']}},  # DASHとHLSをスキップ
-    }
-    
-    # メッセージ送信関数のヘルパー
-    def log_message(msg):
-        if send_message_func:
-            send_message_func(msg)
-        else:
-            print(msg)
-    
-    # cookiesファイルが存在する場合は使用
-    import os
-    if os.path.exists(cookies_file):
-        ydl_opts['cookiesfrombrowser'] = None  # ブラウザのcookieを使わない
-        ydl_opts['cookiefile'] = cookies_file
-        log_message(f"Cookieファイルを使用: {cookies_file}")
-    
-    title = None
-    description = None
-    metadata = {}
-    transcript = None
+        raise ValueError("無効なYouTube URLです")
+    return f"https://www.youtube.com/watch?v={video_id}"
 
-    info = None
-    
-    # 複数の設定パターンを試行
-    format_options = [
-        {'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'},  # 最適な組み合わせ
-        {'format': 'best'},  # ベストシングルフォーマット
-        {'format': 'worst'},  # 最低品質（エラー回避用）
-        {},  # デフォルト設定（フォーマット指定なし）
-    ]
-    
-    for format_opt in format_options:
+
+def _format_choice(entries: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    for ext in ("json3", "vtt", "srt", "srv3", "srv2", "srv1"):
+        for entry in entries or []:
+            if entry.get("ext") == ext and entry.get("url"):
+                return entry
+    return next((x for x in (entries or []) if x.get("url")), None)
+
+
+def select_preferred_subtitle(subtitles: Dict[str, List[Dict]], automatic: Dict[str, List[Dict]]):
+    """Select manual-ja, auto-ja, manual-en, auto-en, including locales."""
+    for source, base, is_auto in ((subtitles,"ja",False),(automatic,"ja",True),(subtitles,"en",False),(automatic,"en",True)):
+        for language in sorted(source, key=lambda key: (key != base, key)):
+            if language == base or language.startswith(base + "-") or language.startswith(base + "_"):
+                choice = _format_choice(source.get(language, []))
+                if choice:
+                    return choice, language, is_auto
+    return None
+
+
+def _public_transcript(video_id: str):
+    """Use YouTube's public transcript surface when signed media URLs are blocked."""
+    if YouTubeTranscriptApi is None:
+        raise RuntimeError("youtube-transcript-api is not installed")
+    transcripts = list(YouTubeTranscriptApi().list(video_id))
+    for language, generated in (("ja", False), ("ja", True), ("en", False), ("en", True)):
+        for item in sorted(transcripts, key=lambda value: (value.language_code != language, value.language_code)):
+            code = item.language_code
+            if (code == language or code.startswith(language + "-") or code.startswith(language + "_")) and item.is_generated == generated:
+                text = "\n".join(segment.text for segment in item.fetch()).strip()
+                if text:
+                    return text, code, generated
+    raise RuntimeError("利用可能な日本語または英語字幕がありません")
+
+
+def _watch_page_metadata(canonical: str) -> Dict[str, Any]:
+    response = requests.get(canonical + "&hl=ja", timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    response.raise_for_status()
+    marker = "ytInitialPlayerResponse = "
+    position = response.text.find(marker)
+    if position < 0:
+        raise RuntimeError("YouTube player metadata was unavailable")
+    start = response.text.find("{", position + len(marker))
+    data, _ = json.JSONDecoder().raw_decode(response.text[start:])
+    details = data.get("videoDetails") or {}
+    micro = (data.get("microformat") or {}).get("playerMicroformatRenderer") or {}
+    thumbnails = (details.get("thumbnail") or {}).get("thumbnails") or [{}]
+    return {
+        "title": details.get("title", ""), "description": details.get("shortDescription", ""),
+        "uploader": details.get("author", ""), "channel_id": details.get("channelId", ""),
+        "duration": int(details.get("lengthSeconds") or 0), "view_count": int(details.get("viewCount") or 0),
+        "upload_date": (micro.get("uploadDate") or "").replace("-", ""),
+        "thumbnail": thumbnails[-1].get("url", ""), "tags": details.get("keywords") or [],
+    }
+
+
+def parse_json3_subtitle(content: str) -> str:
+    data = json.loads(content)
+    pieces = []
+    for event in data.get("events", []):
+        for segment in event.get("segs") or []:
+            pieces.append(html.unescape(segment.get("utf8", "")))
+    return "".join(pieces).strip()
+
+
+def parse_vtt_subtitle(content: str) -> str:
+    output = []
+    for line in content.splitlines():
+        line = line.strip()
+        if not line or line == "WEBVTT" or "-->" in line or line.isdigit() or line.startswith(("Kind:", "Language:")):
+            continue
+        text = html.unescape(re.sub(r"<[^>]+>", "", line))
+        if text and (not output or output[-1] != text):
+            output.append(text)
+    return "\n".join(output)
+
+
+def parse_srt_subtitle(content: str) -> str:
+    return parse_vtt_subtitle(content)
+
+
+def download_and_parse_subtitle(subtitle_url: str, format_type: str = "json3") -> Optional[str]:
+    response = requests.get(subtitle_url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+    response.raise_for_status()
+    if format_type == "json3":
+        return parse_json3_subtitle(response.text)
+    if format_type == "srt":
+        return parse_srt_subtitle(response.text)
+    return parse_vtt_subtitle(response.text)
+
+
+def _valid_cookie_file(path: Optional[str]) -> bool:
+    """Only opt-in cookies that look like a non-empty Netscape jar are used."""
+    if not path:
+        return False
+    try:
+        p = Path(path)
+        return p.is_file() and p.stat().st_size > 100 and p.read_text(encoding="utf-8", errors="ignore").startswith("# Netscape HTTP Cookie File")
+    except OSError:
+        return False
+
+
+def _extract_with_ytdlp(url: str, cookie_file: Optional[str]) -> Dict[str, Any]:
+    options: Dict[str, Any] = {
+        "quiet": True, "no_warnings": True, "skip_download": True,
+        "extract_flat": False, "writesubtitles": True, "writeautomaticsub": True,
+        "subtitleslangs": ["ja", "en"],
+        "extractor_args": {"youtube": {"player_client": ["android_vr", "web_safari", "web"]}},
+    }
+    # Cookies are never forced merely because the repository's legacy file exists.
+    if _valid_cookie_file(cookie_file):
+        options["cookiefile"] = cookie_file
+    with yt_dlp.YoutubeDL(options) as ydl:
+        return ydl.extract_info(url, download=False)
+
+
+def fetch_youtube_info(url: str, cookies_file: Optional[str] = None, send_message_func=None) -> Tuple[Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
+    canonical = canonical_youtube_url(url)
+    try:
         try:
-            current_opts = ydl_opts.copy()
-            current_opts.update(format_opt)
-            
-            with yt_dlp.YoutubeDL(current_opts) as ydl:
-                # 動画情報を取得（ダウンロードはしない、処理もスキップ）
-                info = ydl.extract_info(url, download=False, process=False)
-                # 処理が必要な場合
-                if info and not info.get('title'):
-                    info = ydl.process_ie_result(info, download=False)
-                break  # 成功したらループを抜ける
-                
-        except yt_dlp.utils.DownloadError as e:
-            error_msg = str(e)
-            if "Requested format is not available" in error_msg:
-                continue  # 次のフォーマットオプションを試す
-            elif "Sign in to confirm your age" in error_msg:
-                log_message("年齢制限のある動画です")
-                raise ValueError(f"年齢制限のある動画にはアクセスできません: {url}")
-            elif "Video unavailable" in error_msg:
-                raise ValueError(f"動画が利用できません: {url}")
-            else:
-                # その他のエラーは最後に試行した後に再発生させる
-                if format_opt == format_options[-1]:
-                    raise
-        except Exception as e:
-            if format_opt == format_options[-1]:
-                raise
-    
-    if not info:
-        raise ValueError(f"動画情報の取得に失敗しました: {url}")
+            info = _extract_with_ytdlp(canonical, cookies_file)
+        except Exception:
+            info = _watch_page_metadata(canonical)
+        selected = select_preferred_subtitle(info.get("subtitles") or {}, info.get("automatic_captions") or {})
+        transcript = None
+        if selected:
+            subtitle, language, is_auto = selected
+            try:
+                transcript = download_and_parse_subtitle(subtitle["url"], subtitle.get("ext", "json3"))
+            except Exception:
+                transcript = None
+        if not transcript:
+            video_id = extract_video_id(canonical)
+            if not video_id:
+                raise RuntimeError("動画IDがありません")
+            transcript, language, is_auto = _public_transcript(video_id)
+        if not transcript:
+            raise RuntimeError("字幕データが空でした")
+        if len(transcript) > MAX_TRANSCRIPT_CHARS:
+            raise RuntimeError("字幕が処理上限を超えています")
+        metadata = {
+            "channel": info.get("uploader") or info.get("channel") or "",
+            "channel_id": info.get("channel_id", ""), "duration": info.get("duration", 0),
+            "view_count": info.get("view_count", 0), "like_count": info.get("like_count", 0),
+            "upload_date": info.get("upload_date", ""), "tags": info.get("tags") or [],
+            "categories": info.get("categories") or [], "thumbnail": info.get("thumbnail", ""),
+            "video_id": extract_video_id(canonical), "url": canonical,
+            "transcript_language": language, "transcript_is_auto": is_auto,
+        }
+        return info.get("title") or "", info.get("description") or "", transcript, metadata
+    except Exception as exc:
+        # Do not leak signed caption URLs, cookies, or extractor internals to Discord/logs.
+        raise RuntimeError(f"YouTube動画または字幕の取得に失敗しました ({type(exc).__name__})") from None
 
-    # 基本情報を取得
-    title = info.get('title', '')
-    description = info.get('description', '')
-
-    # メタデータを収集
-    metadata = {
-        'channel': info.get('uploader', ''),
-        'channel_id': info.get('channel_id', ''),
-        'duration': info.get('duration', 0),
-        'view_count': info.get('view_count', 0),
-        'like_count': info.get('like_count', 0),
-        'upload_date': info.get('upload_date', ''),
-        'tags': info.get('tags', []),
-        'categories': info.get('categories', []),
-        'thumbnail': info.get('thumbnail', ''),
-        'video_id': video_id,
-        'url': url
-    }
-
-    # 字幕を取得
-    log_message(f"利用可能な字幕を確認中...")
-
-    # 手動字幕を優先的に取得
-    subtitles = info.get('subtitles', {})
-    subtitle_info = None
-    subtitle_lang = None
-
-    if subtitles:
-        log_message(f"手動字幕が利用可能: {list(subtitles.keys())}")
-        result = get_best_subtitle(subtitles, ['ja', 'en'])
-        if result:
-            subtitle_lang, subtitle_info = result
-
-    # 手動字幕がない場合は自動生成字幕を取得
-    if not subtitle_info:
-        auto_captions = info.get('automatic_captions', {})
-        if auto_captions:
-            log_message(f"自動生成字幕が利用可能: {list(auto_captions.keys())}")
-            result = get_best_subtitle(auto_captions, ['ja', 'en'])
-            if result:
-                subtitle_lang, subtitle_info = result
-
-    # 字幕をダウンロードしてパース
-    if subtitle_info and 'url' in subtitle_info:
-        log_message(f"字幕をダウンロード中... (言語: {subtitle_lang}, 形式: {subtitle_info.get('ext', 'unknown')})")
-        transcript = download_and_parse_subtitle(
-            subtitle_info['url'],
-            subtitle_info.get('ext', 'vtt')
-        )
-
-        if transcript:
-            log_message(f"字幕の取得に成功しました（{len(transcript)}文字）")
-        else:
-            log_message("字幕のパースに失敗しました")
-    else:
-        log_message("利用可能な字幕が見つかりませんでした")
-
-
-    return title, description, transcript, metadata
 
 def format_youtube_content(title: str, description: str, transcript: str, metadata: Dict[str, Any]) -> str:
-    """
-    YouTube動画の情報をMarkdown形式で整形
-    """
-    content_parts = []
-    
-    # 動画情報セクション
-    content_parts.append("## 動画情報")
-    content_parts.append(f"**タイトル**: {title}")
-    content_parts.append(f"**チャンネル**: {metadata.get('channel', '不明')}")
-    content_parts.append(f"**公開日**: {metadata.get('upload_date', '不明')}")
-    content_parts.append(f"**再生回数**: {metadata.get('view_count', 0):,}")
-    content_parts.append(f"**高評価数**: {metadata.get('like_count', 0):,}")
-    
-    duration = metadata.get('duration', 0)
-    if duration:
-        hours = duration // 3600
-        minutes = (duration % 3600) // 60
-        seconds = duration % 60
-        if hours > 0:
-            content_parts.append(f"**動画の長さ**: {hours}時間{minutes}分{seconds}秒")
-        else:
-            content_parts.append(f"**動画の長さ**: {minutes}分{seconds}秒")
-    
-    if metadata.get('tags'):
-        content_parts.append(f"**タグ**: {', '.join(metadata['tags'][:10])}")
-    
-    content_parts.append("")
-    
-    # 説明文セクション
-    if description:
-        content_parts.append("## 説明文")
-        content_parts.append(description[:1000])  # 最初の1000文字
-        if len(description) > 1000:
-            content_parts.append("...")
-        content_parts.append("")
-    
-    # 字幕セクション
-    if transcript:
-        content_parts.append("## 字幕・トランスクリプト")
-        # 長い字幕は適切に分割
-        if len(transcript) > 5000:
-            content_parts.append(transcript[:5000])
-            content_parts.append("\n[字幕が長いため省略されています...]")
-        else:
-            content_parts.append(transcript)
-    else:
-        content_parts.append("## 字幕・トランスクリプト")
-        content_parts.append("*字幕が利用できません*")
-    
-    return "\n".join(content_parts)
-
-if __name__ == "__main__":
-    # テスト用
-    test_urls = [
-        "https://www.youtube.com/watch?v=dQw4w9WgXcQ",  # Never Gonna Give You Up
-        "https://youtu.be/dQw4w9WgXcQ",
-    ]
-    
-    for test_url in test_urls[:1]:  # 最初の1つだけテスト
-        print(f"\nテスト URL: {test_url}")
-        print("-" * 50)
-        
-        try:
-            title, description, transcript, metadata = fetch_youtube_info(test_url)
-            
-            if title:
-                print(f"✅ タイトル: {title}")
-                print(f"📝 説明文の長さ: {len(description) if description else 0}文字")
-                print(f"📄 字幕の長さ: {len(transcript) if transcript else 0}文字")
-                print(f"📺 チャンネル: {metadata.get('channel', '不明')}")
-                print(f"👁️ 再生回数: {metadata.get('view_count', 0):,}")
-                
-                # Markdown形式で保存
-                content = format_youtube_content(title, description, transcript, metadata)
-                with open("youtube_test.md", "w", encoding="utf-8") as f:
-                    f.write(content)
-                print("\n📁 youtube_test.md に保存しました")
-                
-                # 字幕の最初の部分を表示
-                if transcript:
-                    print("\n字幕の最初の部分:")
-                    print("-" * 30)
-                    print(transcript[:500] + "..." if len(transcript) > 500 else transcript)
-            else:
-                print("❌ 動画情報の取得に失敗しました")
-                
-        except ValueError as e:
-            print(f"⚠️ {e}")
-        except Exception as e:
-            print(f"❌ エラー: {e}")
-            import traceback
-            traceback.print_exc()
+    return f"## 動画情報\nタイトル: {title}\nチャンネル: {metadata.get('channel', '')}\n\n## 説明文\n{description}\n\n## 字幕\n{transcript}"

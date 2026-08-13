@@ -1,5 +1,6 @@
 import os
 import re  # 追加
+import threading
 from typing import List, Optional
 from notion_client import Client
 
@@ -9,6 +10,36 @@ from tag_predictor import load_tags_from_file, predict_tags
 # Notion API設定
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
 NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID")
+MAX_CONTENT_CHARS = 100_000
+MAX_TRANSCRIPT_CHARS = 100_000
+_registration_locks = {}
+_registration_locks_guard = threading.Lock()
+
+
+def _registration_lock(url: str) -> threading.Lock:
+    """Return the process-local lock for one canonical registration URL."""
+    with _registration_locks_guard:
+        return _registration_locks.setdefault(url, threading.Lock())
+
+class NotionPartialWriteError(RuntimeError):
+    pass
+
+
+def youtube_transcript_paragraph_blocks(transcript: str, max_text_length: int = 1990) -> List[dict]:
+    """Losslessly encode untrusted transcript as plain searchable paragraphs.
+
+    This deliberately performs no Markdown or inline-link parsing, so transcript
+    text cannot create code, image, list, quote, or other Notion block types.
+    """
+    if not transcript:
+        return []
+    return [
+        {
+            "object": "block", "type": "paragraph",
+            "paragraph": {"rich_text": [{"type": "text", "text": {"content": transcript[i:i + max_text_length]}}]},
+        }
+        for i in range(0, len(transcript), max_text_length)
+    ]
 
 
 def init_notion_client():
@@ -36,11 +67,19 @@ def find_existing_page_by_url(notion: Client, url: str):
         },
         page_size=1,
     )
-    results = response.get("results", [])
+    results = [page for page in response.get("results", []) if not page.get("archived", False)]
     return results[0] if results else None
 
 
-def register_notion_table(content: str, url: str, title: str, tags: Optional[List[str]] = None):
+def notion_url_exists(url: str) -> bool:
+    if not NOTION_DATABASE_ID:
+        raise ValueError("NOTION_DATABASE_IDが設定されていません。環境変数を確認してください。")
+    return find_existing_page_by_url(init_notion_client(), url) is not None
+
+
+def register_notion_table(content: str, url: str, title: str, tags: Optional[List[str]] = None,
+                          trusted_transcript: Optional[str] = None,
+                          allow_external_media: bool = True):
     """
     マークダウンコンテンツをNotionのテーブルに登録する
 
@@ -53,6 +92,8 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
     戻り値:
         dict: 作成されたNotionページの情報
     """
+    if len(content or "") > MAX_CONTENT_CHARS or len(trusted_transcript or "") > MAX_TRANSCRIPT_CHARS:
+        raise ValueError("Notion登録内容が処理上限を超えています")
     if not NOTION_DATABASE_ID:
         raise ValueError("NOTION_DATABASE_IDが設定されていません。環境変数を確認してください。")
 
@@ -106,16 +147,23 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
                 "multi_select": [{"name": tag} for tag in tags]
             }
 
-        # ページプロパティのみでページを作成
-        new_page = notion.pages.create(
-            **{
-                "parent": {
-                    "type": "database_id",
-                    "database_id": NOTION_DATABASE_ID
-                },
-                "properties": properties
-            }
-        )
+        # The final duplicate check and creation are atomic within this
+        # supervised single process. Content appends intentionally happen after
+        # releasing the keyed lock so unrelated work is not serialized.
+        with _registration_lock(url):
+            existing_page = find_existing_page_by_url(notion, url)
+            if existing_page:
+                print(f"同じURLのNotionページが既に存在するためスキップします: {url}")
+                return existing_page
+            new_page = notion.pages.create(
+                **{
+                    "parent": {
+                        "type": "database_id",
+                        "database_id": NOTION_DATABASE_ID
+                    },
+                    "properties": properties
+                }
+            )
 
         page_id = new_page["id"]
         print(f"Notionページを作成しました: {title}")
@@ -173,6 +221,8 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
             それ以外は通常テキストとして保持。
             """
             rich_parts = []
+            if not allow_external_media:
+                return _split_text_to_rich(text) or [{"type": "text", "text": {"content": ""}}]
             pos = 0
             for m in link_re.finditer(text):
                 start, end = m.span()
@@ -431,7 +481,7 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
                 continue
 
             # 画像
-            m_img = image_re.match(line.strip())
+            m_img = image_re.match(line.strip()) if allow_external_media else None
             if m_img:
                 flush_paragraph()
                 alt_text = m_img.group(1)
@@ -446,6 +496,12 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
         if in_code:
             flush_code()
         flush_paragraph()
+
+        # Transcript is application-owned plaintext, never fed to the Markdown parser.
+        if trusted_transcript:
+            blocks.append({"object": "block", "type": "divider", "divider": {}})
+            blocks.append(_heading_block(2, "📝 動画の字幕（全文）"))
+            blocks.extend(youtube_transcript_paragraph_blocks(trusted_transcript, MAX_TEXT_LENGTH))
 
         # ブロックを適切なサイズのバッチに分割して追加
         for i in range(0, len(blocks), MAX_BLOCKS_PER_REQUEST):
@@ -463,8 +519,8 @@ def register_notion_table(content: str, url: str, title: str, tags: Optional[Lis
             try:
                 notion.pages.update(page_id=page_id, archived=True)
                 print(f"本文追加に失敗したため作成済みページをアーカイブしました: {page_id}")
-            except Exception as archive_error:
-                print(f"作成済みページのアーカイブにも失敗しました: {archive_error}")
+            except Exception:
+                raise NotionPartialWriteError("Notion本文追加と不完全ページのアーカイブに失敗しました") from None
         print(f"Notionページの作成に失敗しました: {e}")
         raise
 

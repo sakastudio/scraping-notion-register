@@ -49,6 +49,18 @@ def preprocess_registration_url(
         return url
 
     hostname = _normalize_host(parsed.hostname or "")
+
+    # YouTube registration identity is the video ID, not host/path/tracking data.
+    # Import locally to avoid making the generic rules loader depend on yt-dlp.
+    if hostname in {
+        "youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com",
+        "youtu.be", "www.youtu.be",
+    }:
+        from get_youtube import extract_video_id
+        video_id = extract_video_id(url)
+        if video_id:
+            return f"https://www.youtube.com/watch?v={video_id}"
+
     if hostname in {"speakerdeck.com", "www.speakerdeck.com"}:
         path = parsed.path.rstrip("/") or "/"
         return urlunparse(("https", "speakerdeck.com", path, "", "", ""))
