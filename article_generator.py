@@ -124,7 +124,7 @@ def _validate_article(article: str) -> str:
 
 def generate_article_with_codex(transcript: str, title: str, description: Optional[str] = None,
                                 metadata: Optional[dict] = None, *, auth_file: Optional[str] = None,
-                                model: Optional[str] = None, timeout: float = 180,
+                                model: Optional[str] = None, timeout: float = 600,
                                 session=None, endpoint: str = DEFAULT_CODEX_URL,
                                 clock=time.monotonic) -> str:
     """Generate via the tool-free ChatGPT Codex Responses endpoint (never agentic CLI)."""

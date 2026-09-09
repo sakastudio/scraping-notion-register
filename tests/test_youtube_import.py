@@ -283,12 +283,18 @@ class CodexAdapterTests(unittest.TestCase):
                 'data: {"type":"response.output_text.delta","delta":"## 要約\\n十分な長さの記事本文です。"}',
                 'data: {"type":"response.completed"}', 'data: [DONE]'])
             transcript="SECRET TRANSCRIPT "*10
-            article=article_generator.generate_article_with_codex(transcript,"title",auth_file=str(auth),session=session,timeout=5)
+            article=article_generator.generate_article_with_codex(transcript,"title",auth_file=str(auth),session=session)
             kwargs=session.post.call_args.kwargs; body=kwargs["json"]
             self.assertEqual([],body["tools"]); self.assertTrue(body["stream"]); self.assertFalse(body["store"])
+            self.assertEqual((10, 600), kwargs["timeout"])
             self.assertIsInstance(body["instructions"],str); self.assertIsInstance(body["input"],list)
             self.assertIn(transcript,json.dumps(body,ensure_ascii=False)); self.assertEqual("gpt-5.6-sol",body["model"])
             self.assertEqual("Bearer top-secret",kwargs["headers"]["Authorization"]); self.assertIn("# 記事",article)
+
+    def test_default_timeout_allows_long_transcript_generation(self):
+        import inspect
+        timeout = inspect.signature(article_generator.generate_article_with_codex).parameters["timeout"].default
+        self.assertEqual(600, timeout)
 
     def test_auth_and_401_errors_are_sanitized(self):
         with tempfile.TemporaryDirectory() as td:
